@@ -317,19 +317,17 @@ function setupSelectors() {
     };
 }
 
-// SHOW MAP SCREEN
+// SHOW MAP SCREEN (Google Maps style - side-by-side)
 function showMap() {
     document.getElementById('loadingSpinner').classList.remove('hidden');
-    
     setTimeout(() => {
-        document.getElementById('selectorScreen').classList.remove('active');
+        // GOOGLE MAPS STYLE: Keep selector visible, show map beside it
+        document.getElementById('selectorScreen').classList.add('active');
         document.getElementById('mapScreen').classList.add('active');
         document.getElementById('loadingSpinner').classList.add('hidden');
-        
         if (!map) {
             initMap();
         }
-        
         setTimeout(() => {
             drawWards();
             updateInfo();
@@ -337,6 +335,7 @@ function showMap() {
         }, 500);
     }, 300);
 }
+
 
 // INITIALIZE MAP
 function initMap() {
@@ -718,10 +717,27 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
     return R * c;
 }
 
-// GO BACK
+// GO BACK (Google Maps style - reset but keep both visible)
 function goBackToSelector() {
-    document.getElementById('mapScreen').classList.remove('active');
-    document.getElementById('selectorScreen').classList.add('active');
+    // In Google Maps style layout, both screens stay visible
+    // Just reset the selectors so user can pick a new one
+    const districtSelect = document.getElementById('districtSelect');
+    const typeContainer = document.getElementById('typeButtonsContainer');
+    const bodySelect = document.getElementById('bodySelect');
+    const viewMapBtn = document.getElementById('viewMapBtn');
+    
+    districtSelect.value = '';
+    bodySelect.value = '';
+    bodySelect.disabled = true;
+    typeContainer.innerHTML = '';
+    viewMapBtn.disabled = true;
+    
+    // Clear current selections
+    currentDistrict = null;
+    currentType = null;
+    currentBody = null;
+    
+    console.log('🔄 Reset selectors - ready for new selection');
 }
 
 // CONNECTION LISTENER

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kerala Ward Map - Delimitation Commission</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+    <!-- Leaflet Fullscreen -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet-fullscreen/2.4.0/Control.FullScreen.min.css">
+    
+    <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+    <!-- SELECTOR SCREEN -->
+    <div id="selectorScreen" class="screen active">
+        <div class="selector-container">
+            <div class="selector-header">
+                <h1>🗺️ Kerala Ward Maps</h1>
+                <p>Delimitation Commission 2024</p>
+            </div>
+
+            <!-- Status Bar -->
+            <div id="statusBar" class="status-bar">
+                <span id="statusDot" class="status-dot online"></span>
+                <span id="statusText">Checking connection...</span>
+            </div>
+
+            <!-- District Selection -->
+            <div class="selector-section">
+                <label for="districtSelect">📍 Select District</label>
+                <select id="districtSelect" class="selector-input">
+                    <option value="">-- Choose District --</option>
+                </select>
+            </div>
+
+            <!-- Local Body Type Selection -->
+            <div class="selector-section">
+                <label for="typeSelect">🏛️ Select Local Body Type</label>
+                <div id="typeButtonsContainer" class="type-buttons-container"></div>
+            </div>
+
+            <!-- Local Body Selection -->
+            <div class="selector-section">
+                <label for="bodySelect">🏘️ Select Local Body</label>
+                <select id="bodySelect" class="selector-input" disabled>
+                    <option value="">-- First select type --</option>
+                </select>
+            </div>
+
+            <!-- View Map Button -->
+            <button id="viewMapBtn" class="submit-btn" disabled>
+                View Map →
+            </button>
+
+            <!-- Info -->
+            <div class="info-box">
+                <p><strong>ℹ️ About:</strong> This app shows all 20,950 electoral ward boundaries from the 2024 delimitation by the Delimitation Commission, Kerala.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAP SCREEN -->
+    <div id="mapScreen" class="screen">
+        <div id="mapContainer"></div>
+        
+        <!-- Map Controls -->
+        <div class="map-controls">
+            <button id="locateBtn" class="map-btn" title="Find My Location">
+                📍 My Location
+            </button>
+            <button id="backBtn" class="map-btn" title="Back to Selector">
+                ← Back
+            </button>
+        </div>
+
+        <!-- Ward Info Panel -->
+        <div id="wardInfoPanel" class="ward-info-panel">
+            <h3 id="wardTitle">Loading...</h3>
+            <p id="wardInfo"></p>
+        </div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div id="loadingSpinner" class="loading-spinner hidden">
+        <div class="spinner"></div>
+        <p>Loading map...</p>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-fullscreen/2.4.0/Control.FullScreen.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.6.2/axios.min.js"></script>
+    <script src="assets/script.js"></script>
+</body>
+</html>

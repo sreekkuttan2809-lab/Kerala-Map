@@ -1,0 +1,15 @@
+{
+  "name": "kerala-ward-maps",
+  "version": "1.0.0",
+  "description": "Kerala Ward Maps - Delimitation Commission 2024",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": ["kerala", "ward", "maps", "delimitation"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}

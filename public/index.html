@@ -1,97 +1,304 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kerala Ward Map - Delimitation Commission</title>
-    
-    <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
-    <!-- Leaflet Fullscreen -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet-fullscreen/2.4.0/Control.FullScreen.min.css">
-    
-    <link rel="stylesheet" href="assets/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kerala Ward Maps - Google Maps Style</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+  <link rel="stylesheet" href="assets/style.css">
+  
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .app {
+      display: flex;
+      height: 100vh;
+      width: 100%;
+      overflow: hidden;
+    }
+
+    .sidebar {
+      width: 340px;
+      max-width: 40%;
+      background: #fff;
+      box-shadow: 2px 0 6px rgba(0,0,0,0.15);
+      display: flex;
+      flex-direction: column;
+      z-index: 1000;
+      overflow-y: auto;
+    }
+
+    .search-bar {
+      padding: 8px 10px;
+      border-bottom: 1px solid #ddd;
+      display: flex;
+      gap: 6px;
+    }
+
+    .search-input {
+      flex: 1;
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid #ccc;
+      font-size: 13px;
+      outline: none;
+    }
+
+    .directions-header {
+      padding: 10px 14px 6px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .directions-body {
+      padding: 0 14px 10px;
+      border-bottom: 1px solid #eee;
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .section-title {
+      font-weight: 600;
+      color: #202124;
+      margin: 12px 0 8px;
+      font-size: 13px;
+    }
+
+    .form-section {
+      margin-bottom: 12px;
+    }
+
+    .form-section label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: #202124;
+      margin-bottom: 6px;
+    }
+
+    .form-section select {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .type-buttons {
+      display: flex;
+      gap: 6px;
+      margin-top: 6px;
+    }
+
+    .type-btn {
+      flex: 1;
+      padding: 6px 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      background: white;
+      color: #202124;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .type-btn:hover:not(:disabled) {
+      border-color: #bdc1c6;
+      background: #f8f9fa;
+    }
+
+    .type-btn.active {
+      background: #1a73e8;
+      color: white;
+      border-color: #1a73e8;
+    }
+
+    .type-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .view-map-btn {
+      width: 100%;
+      padding: 10px 14px;
+      background: #1a73e8;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 12px;
+    }
+
+    .view-map-btn:hover:not(:disabled) {
+      background: #1765cc;
+    }
+
+    .view-map-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .sidebar-bottom {
+      padding: 10px 14px;
+      font-size: 11px;
+      color: #666;
+      border-top: 1px solid #eee;
+    }
+
+    #map {
+      flex: 1;
+      height: 100%;
+      width: 100%;
+    }
+
+    .map-info {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      background: white;
+      padding: 12px 16px;
+      border-radius: 4px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      z-index: 50;
+      display: none;
+    }
+
+    .map-info.show {
+      display: block;
+    }
+
+    .map-info h3 {
+      font-size: 15px;
+      font-weight: 600;
+      margin: 0 0 4px;
+      color: #202124;
+    }
+
+    .map-info p {
+      font-size: 12px;
+      color: #5f6368;
+      margin: 0;
+    }
+
+    .map-controls {
+      position: absolute;
+      bottom: 16px;
+      left: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 50;
+    }
+
+    .map-btn {
+      background: white;
+      border: none;
+      padding: 10px 14px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      transition: all 0.2s;
+    }
+
+    .map-btn:hover {
+      background: #f8f9fa;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    @media (max-width: 768px) {
+      .app {
+        flex-direction: column;
+      }
+      .sidebar {
+        width: 100%;
+        max-width: 100%;
+        height: 50%;
+        border-right: none;
+        border-bottom: 1px solid #ddd;
+      }
+      #map {
+        width: 100%;
+        height: 50%;
+      }
+    }
+  </style>
 </head>
 <body>
-    <!-- SELECTOR SCREEN -->
-    <div id="selectorScreen" class="screen active">
-        <div class="selector-container">
-            <div class="selector-header">
-                <h1>🗺️ Kerala Ward Maps</h1>
-                <p>Delimitation Commission 2024</p>
-            </div>
+  <div class="app">
+    <div class="sidebar" id="selectorScreen">
+      <div class="search-bar">
+        <input class="search-input" type="text" placeholder="Search wards..." disabled>
+      </div>
 
-            <!-- Status Bar -->
-            <div id="statusBar" class="status-bar">
-                <span id="statusDot" class="status-dot online"></span>
-                <span id="statusText">Checking connection...</span>
-            </div>
+      <div class="directions-header">🗺️ Kerala Ward Maps</div>
 
-            <!-- District Selection -->
-            <div class="selector-section">
-                <label for="districtSelect">📍 Select District</label>
-                <select id="districtSelect" class="selector-input">
-                    <option value="">-- Choose District --</option>
-                </select>
-            </div>
+      <div class="directions-body">
+        <div class="section-title">Select Location</div>
 
-            <!-- Local Body Type Selection -->
-            <div class="selector-section">
-                <label for="typeSelect">🏛️ Select Local Body Type</label>
-                <div id="typeButtonsContainer" class="type-buttons-container"></div>
-            </div>
-
-            <!-- Local Body Selection -->
-            <div class="selector-section">
-                <label for="bodySelect">🏘️ Select Local Body</label>
-                <select id="bodySelect" class="selector-input" disabled>
-                    <option value="">-- First select type --</option>
-                </select>
-            </div>
-
-            <!-- View Map Button -->
-            <button id="viewMapBtn" class="submit-btn" disabled>
-                View Map →
-            </button>
-
-            <!-- Info -->
-            <div class="info-box">
-                <p><strong>ℹ️ About:</strong> This app shows all 20,950 electoral ward boundaries from the 2024 delimitation by the Delimitation Commission, Kerala.</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- MAP SCREEN -->
-    <div id="mapScreen" class="screen">
-        <div id="mapContainer"></div>
-        
-        <!-- Map Controls -->
-        <div class="map-controls">
-            <button id="locateBtn" class="map-btn" title="Find My Location">
-                📍 My Location
-            </button>
-            <button id="backBtn" class="map-btn" title="Back to Selector">
-                ← Back
-            </button>
+        <div class="form-section">
+          <label for="districtSelect">📍 District</label>
+          <select id="districtSelect">
+            <option value="">-- Choose District --</option>
+            <option value="Alappuzha">Alappuzha</option>
+            <option value="Ernakulam">Ernakulam</option>
+            <option value="Idukki">Idukki</option>
+            <option value="Kannur">Kannur</option>
+            <option value="Kasaragod">Kasaragod</option>
+            <option value="Kollam">Kollam</option>
+            <option value="Kottayam">Kottayam</option>
+            <option value="Kozhikode">Kozhikode</option>
+            <option value="Malappuram">Malappuram</option>
+            <option value="Palakkad">Palakkad</option>
+            <option value="Pathanamthitta">Pathanamthitta</option>
+            <option value="Thiruvanathapuram">Thiruvananthapuram</option>
+            <option value="Thrissur">Thrissur</option>
+            <option value="Wayanad">Wayanad</option>
+          </select>
         </div>
 
-        <!-- Ward Info Panel -->
-        <div id="wardInfoPanel" class="ward-info-panel">
-            <h3 id="wardTitle">Loading...</h3>
-            <p id="wardInfo"></p>
+        <div class="form-section">
+          <label>🏛️ Type</label>
+          <div class="type-buttons" id="typeButtonsContainer"></div>
         </div>
+
+        <div class="form-section">
+          <label for="bodySelect">🏘️ Local Body</label>
+          <select id="bodySelect" disabled>
+            <option value="">-- Choose Local Body --</option>
+          </select>
+        </div>
+
+        <button class="view-map-btn" id="viewMapBtn" disabled>View Map →</button>
+      </div>
+
+      <div class="sidebar-bottom">
+        <strong>ℹ️ About:</strong> Electoral ward boundaries. 20,950 wards across Kerala.
+      </div>
     </div>
 
-    <!-- Loading Spinner -->
-    <div id="loadingSpinner" class="loading-spinner hidden">
-        <div class="spinner"></div>
-        <p>Loading map...</p>
+    <div id="mapScreen" style="flex: 1; position: relative;">
+      <div id="map"></div>
+      <div class="map-info" id="mapInfo">
+        <h3 id="mapTitle">Loading...</h3>
+        <p id="mapSubtitle">-</p>
+      </div>
+      <div class="map-controls">
+        <button class="map-btn" id="locateBtn" title="My Location">📍 My Location</button>
+        <button class="map-btn" id="backBtn" title="Back">← Back</button>
+      </div>
     </div>
+  </div>
 
-    <!-- Scripts -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-fullscreen/2.4.0/Control.FullScreen.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.6.2/axios.min.js"></script>
-    <script src="assets/script.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <script src="assets/script.js"></script>
 </body>
 </html>

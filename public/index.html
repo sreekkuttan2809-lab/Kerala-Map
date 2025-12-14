@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Kerala Ward Map - Multi-Stop Navigation</title>
     
     <!-- Leaflet CSS -->
@@ -34,7 +34,10 @@
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Roboto', sans-serif; }
-        body { background-color: #f8f9fa; height: 100vh; width: 100vw; overflow: hidden; display: flex; flex-direction: column; }
+        
+        /* Use dvh for mobile browser bar compatibility */
+        body { background-color: #f8f9fa; height: 100vh; height: 100dvh; width: 100vw; overflow: hidden; display: flex; flex-direction: column; }
+        
         .icon-svg { width: 24px; height: 24px; fill: currentColor; }
 
         /* --- Screens --- */
@@ -50,6 +53,7 @@
             height: 100%;
             z-index: 0;
             background: radial-gradient(circle at center, #ffffff 0%, #e8f0fe 100%);
+            pointer-events: none; /* Let clicks pass through */
         }
 
         /* --- Selector Screen (LIGHT THEME REDESIGN) --- */
@@ -59,11 +63,11 @@
             overflow-y: auto; 
             padding: 1rem;
             background: transparent;
-            font-family: 'Space Grotesk', sans-serif; /* Tech font */
+            font-family: 'Space Grotesk', sans-serif; 
         }
 
         .selector-header { 
-            text-align: center; /* Centered for better aesthetics */
+            text-align: center; 
             margin-bottom: 2.5rem; 
             border-bottom: 1px solid var(--spark-border); 
             padding-bottom: 2rem; 
@@ -78,7 +82,6 @@
             font-weight: 700; 
             letter-spacing: -0.03em;
             text-transform: uppercase;
-            /* No gradient for cleaner light look, or subtle blue gradient */
             background: linear-gradient(180deg, #1a73e8 0%, #0d47a1 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -144,12 +147,11 @@
             background: linear-gradient(to bottom, transparent 95%, rgba(26, 115, 232, 0.05) 100%);
         }
         
-        /* Custom Select Arrow Styling workaround */
+        /* Custom Select Arrow Styling */
         #selectorScreen select {
             -webkit-appearance: none;
             -moz-appearance: none;
             appearance: none;
-            /* Dark arrow for light theme */
             background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23202124%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
             background-repeat: no-repeat;
             background-position: right 0 center;
@@ -211,15 +213,20 @@
         /* --- Map Screen (UNCHANGED Google Maps Style) --- */
         #mapScreen { background: #f8f9fa; z-index: 20; }
         #mapScreen.active { flex-direction: row; }
-        .sidebar { width: 408px; max-width: 100%; background: #fff; box-shadow: 0 0 20px rgba(0,0,0,0.1); display: flex; flex-direction: column; z-index: 1000; height: 100%; position: relative; transition: transform 0.3s ease; }
-        .sidebar.nav-hidden { transform: translateX(-100%); width: 0; overflow: hidden; opacity: 0; }
-        @media (max-width: 600px) {
-            #mapScreen.active { flex-direction: column; }
-            .sidebar { width: 100%; height: auto; max-height: 60vh; order: 2; }
-            .sidebar.nav-hidden { transform: translateY(100%); height: 0; }
-            #mapContainer { height: 40vh; order: 1; }
-            #mapContainer.nav-active { height: 100vh; }
+        
+        .sidebar { 
+            width: 408px; 
+            max-width: 100%; 
+            background: #fff; 
+            box-shadow: 0 0 20px rgba(0,0,0,0.1); 
+            display: flex; 
+            flex-direction: column; 
+            z-index: 1000; 
+            height: 100%; 
+            position: relative; 
+            transition: transform 0.3s ease; 
         }
+        .sidebar.nav-hidden { transform: translateX(-100%); width: 0; overflow: hidden; opacity: 0; }
 
         .transport-bar { background: #fff; padding: 8px 0; display: flex; justify-content: space-around; border-bottom: 1px solid #eee; }
         .mode-btn { display: flex; flex-direction: column; align-items: center; border: none; background: none; cursor: pointer; color: var(--text-light); padding: 8px 16px; border-radius: 40px; transition: background 0.2s; }
@@ -251,64 +258,11 @@
         .search-result-item:hover { background-color: #f1f3f4; }
 
         /* Map & UI Overlays */
-        #mapContainer { flex: 1; height: 100%; width: 100%; z-index: 1; outline: none; transition: height 0.3s; }
-        .fab-container { position: absolute; bottom: 24px; right: 16px; display: flex; flex-direction: column; gap: 12px; z-index: 1000; }
+        #mapContainer { flex: 1; height: 100%; width: 100%; z-index: 1; outline: none; transition: height 0.3s; touch-action: none; /* Prevent swipe refresh */ }
+        .fab-container { position: absolute; bottom: 24px; right: 16px; display: flex; flex-direction: column; gap: 12px; z-index: 1000; transition: bottom 0.3s ease; }
         .fab-btn { width: 56px; height: 56px; border-radius: 50%; background: white; border: none; box-shadow: 0 2px 5px rgba(0,0,0,0.3); cursor: pointer; display: flex; align-items: center; justify-content: center; color: #1a73e8; transition: all 0.2s; }
         .fab-btn:hover { background: #f8f9fa; }
         .fab-btn.primary { background: #1a73e8; color: white; }
-
-        /* AI Button Style */
-        .ai-btn-container {
-            padding: 16px;
-            background: #f0f7ff;
-            border-top: 1px solid #d0e1f7;
-            text-align: center;
-        }
-        .ai-guide-btn {
-            background: linear-gradient(135deg, #4285f4, #9b59b6);
-            color: white;
-            border: none;
-            padding: 12px 20px;
-            border-radius: 24px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            box-shadow: 0 4px 10px rgba(66, 133, 244, 0.3);
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            transition: transform 0.2s;
-            width: 100%;
-            justify-content: center;
-        }
-        .ai-guide-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(66, 133, 244, 0.4); }
-
-        /* AI Modal */
-        .ai-modal {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5); z-index: 2500; display: none;
-            align-items: center; justify-content: center; backdrop-filter: blur(4px);
-        }
-        .ai-modal.active { display: flex; }
-        .ai-card {
-            background: white; width: 90%; max-width: 400px; border-radius: 16px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2); overflow: hidden;
-            display: flex; flex-direction: column; max-height: 80vh;
-        }
-        .ai-header {
-            background: linear-gradient(135deg, #4285f4, #9b59b6);
-            padding: 16px; color: white; display: flex; justify-content: space-between; align-items: center;
-        }
-        .ai-header h3 { margin: 0; font-size: 1.1rem; display: flex; align-items: center; gap: 8px; }
-        .ai-close { background: none; border: none; color: white; font-size: 1.2rem; cursor: pointer; opacity: 0.8; }
-        .ai-body { flex: 1; padding: 16px; overflow-y: auto; background: #f9f9f9; display: flex; flex-direction: column; gap: 12px; }
-        .ai-message { padding: 10px 14px; border-radius: 12px; font-size: 0.95rem; line-height: 1.4; max-width: 85%; }
-        .ai-message.user { background: #e8f0fe; color: #1a73e8; align-self: flex-end; border-bottom-right-radius: 2px; }
-        .ai-message.bot { background: white; border: 1px solid #eee; color: #333; align-self: flex-start; border-bottom-left-radius: 2px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .ai-footer { padding: 12px; border-top: 1px solid #eee; background: white; display: flex; gap: 8px; }
-        .ai-input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 20px; outline: none; }
-        .ai-input:focus { border-color: #4285f4; }
-        .ai-send { background: #4285f4; color: white; border: none; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 
         /* Nav UI */
         .nav-ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1500; pointer-events: none; display: none; flex-direction: column; justify-content: space-between; }
@@ -333,6 +287,54 @@
         .loading-overlay.hidden { display: none; }
         .spinner-google { width: 40px; height: 40px; border: 4px solid #e0e0e0; border-top: 4px solid var(--primary-color); border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* --- MOBILE OPTIMIZATIONS --- */
+        @media (max-width: 600px) {
+            /* Home Screen */
+            .selector-container {
+                padding: 1.5rem;
+                width: 95%;
+                margin-top: 10px;
+            }
+            .selector-header h1 { font-size: 2rem; }
+
+            /* Map Screen */
+            #mapScreen.active { flex-direction: column; }
+            
+            /* Sidebar as Bottom Sheet */
+            .sidebar {
+                width: 100%;
+                height: 50vh; /* Takes lower half */
+                min-height: 200px;
+                order: 2;
+                border-radius: 20px 20px 0 0;
+                box-shadow: 0 -5px 20px rgba(0,0,0,0.1);
+                z-index: 2000;
+            }
+            
+            /* Slide down off-screen when navigating */
+            .sidebar.nav-hidden { transform: translateY(100%); }
+
+            /* Map adapts to remaining space (top half) */
+            #mapContainer {
+                flex: 1; /* Takes whatever space is left above sidebar */
+                order: 1;
+                width: 100%;
+            }
+            
+            /* Full screen map when navigating */
+            #mapContainer.nav-active { height: 100vh; flex: none; }
+
+            /* FAB Position Update */
+            .fab-container {
+                bottom: calc(50vh + 20px); /* Just above the sheet */
+                right: 16px;
+                transition: bottom 0.3s ease;
+            }
+            
+            /* If Sidebar is hidden (nav mode), move FAB down to bottom right */
+            .sidebar.nav-hidden ~ .fab-container { bottom: 24px; }
+        }
     </style>
 </head>
 <body>
@@ -389,12 +391,7 @@
             <div class="options-bar"><button class="leave-now-btn">🕒 Leave now ▼</button></div>
             <div class="routes-list" id="routesList"><div class="route-card"><div class="route-details" style="text-align:center; padding: 20px;">Calculate route to see details.</div></div></div>
             
-            <!-- NEW AI SECTION -->
-            <div class="ai-btn-container">
-                <button class="ai-guide-btn" id="openAiBtn">
-                    <i class="fa-solid fa-wand-magic-sparkles"></i> Ask AI Local Guide
-                </button>
-            </div>
+            <div style="font-size:11px; color:#999; text-align:center; padding:8px;">Open Data Repository: sreekkuttan2809-lab</div>
         </div>
 
         <!-- NAV UI -->
@@ -421,23 +418,6 @@
             <button id="floatingBackBtn" class="fab-btn" title="Back to Home"><i class="fa-solid fa-arrow-left"></i></button>
         </div>
 
-        <!-- AI CHAT MODAL -->
-        <div class="ai-modal" id="aiModal">
-            <div class="ai-card">
-                <div class="ai-header">
-                    <h3><i class="fa-solid fa-robot"></i> Kerala Map Assistant</h3>
-                    <button class="ai-close" id="closeAiBtn"><i class="fa-solid fa-xmark"></i></button>
-                </div>
-                <div class="ai-body" id="aiChatBody">
-                    <div class="ai-message bot">Hello! I'm your guide for this map. Ask me about the selected ward, tourist spots, or history! ✨</div>
-                </div>
-                <div class="ai-footer">
-                    <input type="text" class="ai-input" id="aiUserInput" placeholder="Ask about this place..." onkeypress="if(event.key==='Enter') sendAiMessage()">
-                    <button class="ai-send" onclick="sendAiMessage()"><i class="fa-solid fa-paper-plane"></i></button>
-                </div>
-            </div>
-        </div>
-
         <div id="errorToast" class="error-toast"><div id="errorMsg">Error</div><button style="background:none; border:none; color:#8ab4f8; margin-left:10px; cursor:pointer;" onclick="document.getElementById('errorToast').style.display='none'">CLOSE</button></div>
         <div id="loadingOverlay" class="loading-overlay hidden"><div class="spinner-google"></div><p style="margin-top:1rem; color: var(--text-dark); font-weight:500;">Fetching Data...</p></div>
     </div>
@@ -453,7 +433,6 @@
         const GITHUB_USER = "sreekkuttan2809-lab";
         const GITHUB_REPO = "Kerala-Map";
         const GITHUB_BRANCH = "main";
-        const apiKey = ""; // Provided by environment
         
         const districts = ["Thiruvananthapuram", "Kollam", "Pathanamthitta", "Alappuzha", "Kottayam", "Idukki", "Ernakulam", "Thrissur", "Palakkad", "Malappuram", "Kozhikode", "Wayanad", "Kannur", "Kasaragod"];
         const localBodyTypes = [{ id: "G", name: "Grama Panchayat" }, { id: "M", name: "Municipality" }, { id: "C", name: "Corporation" }, { id: "BP", name: "Block Panchayat" }, { id: "DP", name: "District Panchayat" }];
@@ -482,10 +461,7 @@
             sidebarPanel: document.getElementById('sidebarPanel'), mapContainer: document.getElementById('mapContainer'),
             fabContainer: document.getElementById('fabContainer'), navUiLayer: document.getElementById('navUiLayer'), stepBanner: document.getElementById('step-banner'), exitNavBtn: document.getElementById('exit-nav-btn'),
             loading: document.getElementById('loadingOverlay'), errorToast: document.getElementById('errorToast'), errorMsg: document.getElementById('errorMsg'),
-            bgCanvas: document.getElementById('bg-canvas'),
-            // AI
-            openAiBtn: document.getElementById('openAiBtn'), closeAiBtn: document.getElementById('closeAiBtn'), aiModal: document.getElementById('aiModal'),
-            aiChatBody: document.getElementById('aiChatBody'), aiUserInput: document.getElementById('aiUserInput')
+            bgCanvas: document.getElementById('bg-canvas')
         };
 
         function init() {
@@ -501,7 +477,8 @@
             const renderer = new THREE.WebGLRenderer({ canvas: els.bgCanvas, alpha: true, antialias: true });
             
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(window.devicePixelRatio);
+            // Cap pixel ratio to 2 for mobile performance
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             appState.threeRenderer = renderer;
 
             // 1. Wireframe Globe (Blue on White) - 50% OPACITY
@@ -517,9 +494,10 @@
             scene.add(core);
 
             // 3. Particles (SNOWFALLING EFFECT)
-            // Use blueish color for snow to be visible on white bg
             const particlesGeom = new THREE.BufferGeometry();
-            const particlesCount = 700;
+            // Reduce particle count on small screens for performance
+            const isMobile = window.innerWidth < 600;
+            const particlesCount = isMobile ? 350 : 700;
             const posArray = new Float32Array(particlesCount * 3);
             for(let i=0; i<particlesCount*3; i++) {
                 posArray[i] = (Math.random() - 0.5) * 40; // Spread
@@ -531,14 +509,13 @@
 
             camera.position.z = 18;
 
-            // Mouse Interaction
             let mouseX = 0, mouseY = 0;
+            // Use touch events for interaction on mobile too
             document.addEventListener('mousemove', (event) => {
                 mouseX = (event.clientX / window.innerWidth) * 2 - 1;
                 mouseY = -(event.clientY / window.innerHeight) * 2 + 1;
             });
 
-            // Animation Loop
             let animateId;
             const animate = () => {
                 animateId = requestAnimationFrame(animate);
@@ -565,7 +542,6 @@
             };
             animate();
 
-            // Handle Resize
             window.addEventListener('resize', () => {
                 camera.aspect = window.innerWidth / window.innerHeight;
                 camera.updateProjectionMatrix();
@@ -628,77 +604,7 @@
                 });
             });
 
-            // AI UI Events
-            els.openAiBtn.addEventListener('click', () => els.aiModal.classList.add('active'));
-            els.closeAiBtn.addEventListener('click', () => els.aiModal.classList.remove('active'));
-
             document.addEventListener('click', (e) => { if (!els.searchResults.contains(e.target)) els.searchResults.classList.remove('active'); });
-        }
-
-        // --- GEMINI AI INTEGRATION ---
-        async function sendAiMessage() {
-            const input = els.aiUserInput.value.trim();
-            if (!input) return;
-
-            // 1. Add User Message
-            addMessageToChat(input, 'user');
-            els.aiUserInput.value = '';
-
-            // 2. Prepare Context
-            const context = `
-                You are a helpful local guide for Kerala, India.
-                The user is exploring the map application.
-                Current Context:
-                - District: ${appState.district || 'Not selected'}
-                - Local Body: ${appState.localBody || 'Not selected'}
-                - Selected Ward: ${appState.waypoints.find(w => w.type === 'ward')?.text || 'None'}
-                
-                Answer the user's question briefly and helpfully about this location.
-                If they ask about the app, explain it helps visualize ward boundaries and navigate.
-            `;
-
-            // 3. Call Gemini
-            try {
-                // Show typing indicator
-                const typingId = addMessageToChat("Thinking...", 'bot');
-                
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{
-                            parts: [{ text: context + "\nUser Question: " + input }]
-                        }]
-                    })
-                });
-
-                const data = await response.json();
-                
-                // Remove typing indicator
-                const typingElem = document.getElementById(typingId);
-                if(typingElem) typingElem.remove();
-
-                if (data.candidates && data.candidates[0].content) {
-                    const reply = data.candidates[0].content.parts[0].text;
-                    addMessageToChat(reply, 'bot');
-                } else {
-                    addMessageToChat("Sorry, I couldn't connect to the AI service right now.", 'bot');
-                }
-            } catch (e) {
-                console.error(e);
-                addMessageToChat("Error connecting to AI.", 'bot');
-            }
-        }
-
-        function addMessageToChat(text, sender) {
-            const id = 'msg-' + Date.now();
-            const div = document.createElement('div');
-            div.className = `ai-message ${sender}`;
-            div.id = id;
-            div.innerText = text;
-            els.aiChatBody.appendChild(div);
-            els.aiChatBody.scrollTop = els.aiChatBody.scrollHeight;
-            return id;
         }
 
         // --- DYNAMIC INPUTS ---
@@ -828,7 +734,17 @@
         function renderTypeButtons() { els.typeContainer.innerHTML = ''; if(!appState.district) return; localBodyTypes.forEach(t => { const btn = document.createElement('button'); btn.className = 'type-btn'; btn.textContent = t.name; btn.onclick = () => { document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('selected')); btn.classList.add('selected'); appState.type = t.id; populateBodies(); }; els.typeContainer.appendChild(btn); }); }
         function populateBodies() { els.bodySelect.innerHTML = '<option value="">-- Select Local Body --</option>'; els.bodySelect.disabled = false; let list = (mockLocalBodies[appState.district] && mockLocalBodies[appState.district][appState.type]) ? mockLocalBodies[appState.district][appState.type] : [`${appState.district} Body 1`, `${appState.district} Body 2`]; list.forEach(item => { const opt = document.createElement('option'); opt.value = item; opt.textContent = item; els.bodySelect.appendChild(opt); }); }
         function switchScreen(name) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); els.screens[name].classList.add('active'); els.searchResults.classList.remove('active'); if(name === 'map' && appState.map) setTimeout(() => appState.map.invalidateSize(), 200); }
-        function initMap() { if(appState.map) return; appState.map = L.map('mapContainer', { zoomControl: false }).setView([10.8505, 76.2711], 8); L.control.zoom({ position: 'bottomright' }).addTo(appState.map); L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { attribution: '&copy; CARTO', subdomains: 'abcd', maxZoom: 20 }).addTo(appState.map); }
+        
+        function initMap() { 
+            if(appState.map) return; 
+            // attributionControl: false removes the "Leaflet | CARTO" text
+            appState.map = L.map('mapContainer', { zoomControl: false, attributionControl: false }).setView([10.8505, 76.2711], 8); 
+            L.control.zoom({ position: 'bottomright' }).addTo(appState.map); 
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { 
+                subdomains: 'abcd', 
+                maxZoom: 20 
+            }).addTo(appState.map); 
+        }
         
         async function fetchData() {
             els.loading.classList.remove('hidden');

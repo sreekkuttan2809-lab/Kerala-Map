@@ -1040,7 +1040,7 @@
         async function fetchGeoJsonFromRepo(district, localBody) {
             // First try local bundled GeoJSON (faster and works offline)
             try {
-                const localRes = await fetch('/data/KL_Wards.geojson');
+                const localRes = await fetch('./data/KL_wards.geojson');
                 if (localRes.ok) {
                     const full = await localRes.json();
                     // Filter features by LocalBody (preferred) or by District if LocalBody not matched

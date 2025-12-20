@@ -256,6 +256,8 @@
         .search-dropdown.active { display: block; }
         .search-result-item { padding: 10px 14px; cursor: pointer; border-bottom: 1px solid #f1f3f4; font-size: 13px; display: flex; align-items: center; gap: 8px; }
         .search-result-item:hover { background-color: #f1f3f4; }
+        .search-result-item.active { background-color: #e8f0fe; }
+        .search-separator { cursor: default; font-weight:700; background:#f6f7f8; border-bottom:1px solid #eee; }
 
         /* Map & UI Overlays */
         #mapContainer { flex: 1; height: 100%; width: 100%; z-index: 1; outline: none; transition: height 0.3s; touch-action: none; /* Prevent swipe refresh */ }
@@ -263,6 +265,26 @@
         .fab-btn { width: 56px; height: 56px; border-radius: 50%; background: white; border: none; box-shadow: 0 2px 5px rgba(0,0,0,0.3); cursor: pointer; display: flex; align-items: center; justify-content: center; color: #1a73e8; transition: all 0.2s; }
         .fab-btn:hover { background: #f8f9fa; }
         .fab-btn.primary { background: #1a73e8; color: white; }
+
+        /* Locate button (floating) */
+        .locate-btn {
+            position: absolute;
+            right: 16px;
+            bottom: 100px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: #1a73e8;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 6px 16px rgba(26,115,232,0.25);
+            border: none;
+            z-index: 1200;
+            cursor: pointer;
+        }
+        .locate-btn .fa-location-arrow { transform: rotate(45deg); }
 
         /* Nav UI */
         .nav-ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1500; pointer-events: none; display: none; flex-direction: column; justify-content: space-between; }
@@ -336,6 +358,13 @@
             .sidebar.nav-hidden ~ .fab-container { bottom: 24px; }
         }
     </style>
+    <script>
+        // Early global error handler to capture parse/runtime errors and their locations
+        window.addEventListener('error', function(e) {
+            try { console.error('GLOBAL_ERROR:', e.message, 'at', e.filename + ':' + e.lineno + ':' + e.colno); } catch(_) { console.error('GLOBAL_ERROR', e); }
+        });
+        console.log('Early error handler installed');
+    </script>
 </head>
 <body>
 
@@ -361,8 +390,7 @@
                 <select id="bodySelect" class="selector-input" disabled><option value="">-- Select type first --</option></select>
             </div>
             <div class="selector-section">
-                <label>04 // Specific Ward (Optional)</label>
-                <select id="wardSelect" class="selector-input" disabled><option value="">-- Select body first --</option></select>
+                <button id="autoDetectLocationBtn" class="submit-btn" style="background-color: #fbbc05; color: #000;">Find My Location & Auto-Select</button>
             </div>
             <button id="viewMapBtn" class="submit-btn" disabled>Explore Map</button>
         </div>
@@ -382,7 +410,13 @@
             <!-- DYNAMIC INPUTS CONTAINER -->
             <div class="inputs-container">
                 <div id="stopsContainer"></div>
-                <button class="add-stop-btn" id="addStopBtn"><i class="fa-solid fa-circle-plus"></i> Add destination</button>
+                <div style="display:flex; gap:8px; align-items:center; margin-top:8px;">
+                    <button class="add-stop-btn" id="addStopBtn"><i class="fa-solid fa-circle-plus"></i> Add destination</button>
+                    <button id="startTravelBtn" class="add-stop-btn" style="background:#1a73e8; color:white; border-radius:8px;
+                        padding:10px 12px; box-shadow:0 4px 10px rgba(26,115,232,0.2);">
+                        <i class="fa-solid fa-paper-plane"></i> Start Travel
+                    </button>
+                </div>
             </div>
             
             <!-- SEARCH RESULTS -->
@@ -407,6 +441,7 @@
                     <div style="width: 1px; height: 20px; background: #ddd;"></div>
                     <div class="stat-item"><span class="stat-val" id="total-dist">0 km</span><span class="stat-label">Distance</span></div>
                     <button id="exit-nav-btn" title="Exit Navigation">✕</button>
+                    <button id="followToggleBtn" title="Toggle follow while navigating" style="margin-left:10px; background:#fff; border:1px solid #ddd; border-radius:8px; padding:6px 8px; cursor:pointer;">Follow: On</button>
                 </div>
             </div>
         </div>
@@ -428,15 +463,32 @@
     <!-- Three.js for 3D Background -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     
+    <!-- Bootstrap: populate district dropdown quickly so UI remains usable even if main script fails -->
+    <script>
+        (function(){
+            try {
+                const fallback = ["Thiruvananthapuram","Kollam","Pathanamthitta","Alappuzha","Kottayam","Idukki","Ernakulam","Thrissur","Palakkad","Malappuram","Kozhikode","Wayanad","Kannur","Kasaragod"];
+                const sel = document.getElementById('districtSelect');
+                if (sel && sel.options.length <= 1) {
+                    sel.innerHTML = '<option value="">-- Choose District --</option>';
+                    fallback.forEach(d => { const o = document.createElement('option'); o.value = d; o.textContent = d; sel.appendChild(o); });
+                    console.log('Bootstrap: populated districtSelect fallback');
+                }
+            } catch (e) { console.warn('Bootstrap populate failed', e); }
+        })();
+    </script>
+
     <script>
         // CONFIG
         const GITHUB_USER = "sreekkuttan2809-lab";
+        console.log('Kerala Ward Map script loaded');
         const GITHUB_REPO = "Kerala-Map";
         const GITHUB_BRANCH = "main";
         
         const districts = ["Thiruvananthapuram", "Kollam", "Pathanamthitta", "Alappuzha", "Kottayam", "Idukki", "Ernakulam", "Thrissur", "Palakkad", "Malappuram", "Kozhikode", "Wayanad", "Kannur", "Kasaragod"];
         const localBodyTypes = [{ id: "G", name: "Grama Panchayat" }, { id: "M", name: "Municipality" }, { id: "C", name: "Corporation" }, { id: "BP", name: "Block Panchayat" }, { id: "DP", name: "District Panchayat" }];
         const mockLocalBodies = { "Thiruvananthapuram": { "C": ["Thiruvananthapuram Corporation"], "M": ["Neyyattinkara", "Nedumangad", "Attingal", "Varkala"] }, "Ernakulam": { "C": ["Kochi Corporation"], "M": ["Aluva", "Kalamassery", "North Paravur", "Tripunithura", "Maradu"] }, "Kozhikode": { "C": ["Kozhikode Corporation"], "M": ["Vadakara", "Koyilandy", "Ramanattukara", "Feroke", "Payyoli", "Koduvally", "Mukkam"] } };
+        let localMetadata = null; // will hold data from /data/wardMetadata.json when available
 
         let appState = {
             district: null, type: null, localBody: null, map: null, geoJsonLayer: null,
@@ -450,24 +502,72 @@
             isNavigating: false, simulationInterval: null, userPuck: null, navRouteLine: null, routeSteps: [],
             threeRenderer: null
         };
+        // default: follow while navigating enabled
+        appState.followWhileNav = true;
 
         const els = {
             screens: { selector: document.getElementById('selectorScreen'), map: document.getElementById('mapScreen') },
             districtSelect: document.getElementById('districtSelect'), typeContainer: document.getElementById('typeButtonsContainer'),
-            bodySelect: document.getElementById('bodySelect'), wardSelect: document.getElementById('wardSelect'), viewBtn: document.getElementById('viewMapBtn'),
+            bodySelect: document.getElementById('bodySelect'), viewBtn: document.getElementById('viewMapBtn'),
             stopsContainer: document.getElementById('stopsContainer'), addStopBtn: document.getElementById('addStopBtn'),
             searchResults: document.getElementById('searchResults'), routesList: document.getElementById('routesList'),
             floatingBackBtn: document.getElementById('floatingBackBtn'), navigateBtn: document.getElementById('navigateBtn'),
             sidebarPanel: document.getElementById('sidebarPanel'), mapContainer: document.getElementById('mapContainer'),
             fabContainer: document.getElementById('fabContainer'), navUiLayer: document.getElementById('navUiLayer'), stepBanner: document.getElementById('step-banner'), exitNavBtn: document.getElementById('exit-nav-btn'),
+            followToggleBtn: document.getElementById('followToggleBtn'),
             loading: document.getElementById('loadingOverlay'), errorToast: document.getElementById('errorToast'), errorMsg: document.getElementById('errorMsg'),
             bgCanvas: document.getElementById('bg-canvas')
         };
 
-        function init() {
-            districts.forEach(d => { const opt = document.createElement('option'); opt.value = d; opt.textContent = d; els.districtSelect.appendChild(opt); });
+        // Add locateFab (live location) reference after DOM is ready
+        // We'll query lazily in initMap if not present
+
+        async function init() {
             init3DBackground();
+            console.log('init() start');
+            // Populate district select immediately from the built-in list so the UI is responsive
+            // (this ensures the dropdown shows even if metadata fetch is slow or fails)
+            els.districtSelect.innerHTML = '<option value="">-- Choose District --</option>';
+            districts.forEach(d => { const opt = document.createElement('option'); opt.value = d; opt.textContent = d; els.districtSelect.appendChild(opt); });
+            console.log('init() populated fallback districts, options=', els.districtSelect.options.length);
+
             setupEvents();
+
+            // Then attempt to load richer local metadata and replace the district list if available
+            await loadLocalMetadata();
+            if (localMetadata) {
+                els.districtSelect.innerHTML = '<option value="">-- Choose District --</option>';
+                const keys = Object.keys(localMetadata).sort();
+                keys.forEach(d => { const opt = document.createElement('option'); opt.value = d; opt.textContent = d; els.districtSelect.appendChild(opt); });
+            }
+        }
+
+        async function loadLocalMetadata() {
+            try {
+                const res = await fetch('/data/wardMetadata.json');
+                if (!res.ok) throw new Error('metadata not found');
+                localMetadata = await res.json();
+                console.log('Loaded local metadata for', Object.keys(localMetadata).length, 'districts');
+            } catch (e) {
+                console.warn('Local metadata not available:', e.message);
+                localMetadata = null;
+            }
+        }
+
+        function normalizeKey(s) {
+            if (!s) return '';
+            return s.toString().toLowerCase().replace(/\s+/g, '').replace(/[^a-z0-9]/g, '');
+        }
+
+        function findMetadataDistrictKey(district) {
+            if (!localMetadata || !district) return null;
+            const target = normalizeKey(district);
+            // direct match
+            if (localMetadata[district]) return district;
+            for (const key of Object.keys(localMetadata)) {
+                if (normalizeKey(key) === target) return key;
+            }
+            return null;
         }
 
         // --- 3D BACKGROUND LOGIC (LIGHT THEME + 50% SPHERE + SNOW) ---
@@ -553,16 +653,25 @@
         }
 
         function setupEvents() {
-            els.districtSelect.addEventListener('change', e => { appState.district = e.target.value; appState.type = null; appState.localBody = null; renderTypeButtons(); els.bodySelect.innerHTML = '<option value="">-- Select type first --</option>'; els.bodySelect.disabled = true; els.wardSelect.innerHTML = '<option value="">-- Select body first --</option>'; els.wardSelect.disabled = true; els.viewBtn.disabled = true; });
+            els.districtSelect.addEventListener('change', e => { appState.district = e.target.value; appState.type = null; appState.localBody = null; renderTypeButtons(); els.bodySelect.innerHTML = '<option value="">-- Select type first --</option>'; els.bodySelect.disabled = true; els.viewBtn.disabled = true; });
             els.bodySelect.addEventListener('change', async e => {
-                appState.localBody = e.target.value; appState.geoData = null;
-                els.wardSelect.innerHTML = '<option>Loading Wards...</option>'; els.wardSelect.disabled = true; els.viewBtn.disabled = true;
+                appState.localBody = e.target.value;
+                appState.geoData = null;
+                els.viewBtn.disabled = true;
                 try {
                     const data = await fetchGeoJsonFromRepo(appState.district, appState.localBody);
-                    appState.geoData = data; populateWardDropdown(data); els.viewBtn.disabled = false;
-                } catch (err) { els.wardSelect.innerHTML = '<option>Error loading wards</option>'; els.viewBtn.disabled = false; }
+                    appState.geoData = data;
+                    els.viewBtn.disabled = false;
+                } catch (err) {
+                    console.error("Error fetching GeoJSON for local body:", err);
+                    els.viewBtn.disabled = false;
+                }
             });
-            els.wardSelect.addEventListener('change', e => { appState.preSelectedWardName = e.target.value; });
+            
+            const autoDetectLocationBtn = document.getElementById('autoDetectLocationBtn');
+            if (autoDetectLocationBtn) {
+                autoDetectLocationBtn.addEventListener('click', findAndSelectLocation);
+            }
             
             // VIEW MAP (Transitions)
             els.viewBtn.addEventListener('click', () => {
@@ -587,8 +696,30 @@
                 if(appState.resume3D) appState.resume3D(); 
             });
 
-            els.navigateBtn.addEventListener('click', startMultiStopNavigation);
+            els.navigateBtn.addEventListener('click', () => {
+                const first = appState.waypoints && appState.waypoints[0];
+                if (first) {
+                    setWaypointToGPS(first.id);
+                } else {
+                    const id = Date.now();
+                    appState.waypoints.unshift({ id, text: 'Your Location', latlng: null, type: 'gps' });
+                    renderInputs();
+                    setWaypointToGPS(id);
+                }
+            });
+            
+            // Start Travel button (sidebar)
+            const startTravel = document.getElementById('startTravelBtn');
+            if (startTravel) startTravel.addEventListener('click', () => { startMultiStopNavigation(); });
             els.exitNavBtn.addEventListener('click', stopNavigationDemo);
+            // follow toggle UI
+            if (els.followToggleBtn) {
+                els.followToggleBtn.addEventListener('click', () => {
+                    appState.followWhileNav = !appState.followWhileNav;
+                    els.followToggleBtn.textContent = appState.followWhileNav ? 'Follow: On' : 'Follow: Off';
+                    console.log(`Follow mode toggled to: ${appState.followWhileNav}`);
+                });
+            }
             els.addStopBtn.addEventListener('click', () => {
                 appState.waypoints.push({ id: Date.now(), text: "", latlng: null, type: 'ward' });
                 renderInputs();
@@ -619,7 +750,7 @@
                 
                 row.innerHTML = `
                     <div class="stop-indicator">${icon}</div>
-                    <input type="text" class="directions-input" placeholder="${index === 0 ? 'Start location' : 'Add destination'}" value="${wp.text}" readonly>
+                    <input type="text" class="directions-input" data-wp-id="${wp.id}" placeholder="${index === 0 ? 'Start location' : 'Add destination'}" value="${wp.text}">
                     <div class="input-actions">
                         <button class="icon-btn gps-btn" title="Use Current Location" onclick="setWaypointToGPS(${wp.id})"><i class="fa-solid fa-crosshairs"></i></button>
                         ${appState.waypoints.length > 2 ? `<button class="icon-btn" title="Remove" onclick="removeWaypoint(${index})"><i class="fa-solid fa-xmark"></i></button>` : ''}
@@ -649,101 +780,417 @@
                 wp.latlng = layer.getBounds().getCenter();
                 wp.type = 'ward';
                 renderInputs();
+                // focus the updated input so user can continue typing immediately
+                setTimeout(() => focusWaypointInput(id), 50);
             }
         }
 
-        function setWaypointToGPS(id) {
+        async function setWaypointToGPS(id) {
+            if (!navigator.geolocation) { alert('Geolocation not supported'); return; }
             els.loading.classList.remove('hidden');
-            if (!navigator.geolocation) { alert("Geolocation not supported"); els.loading.classList.add('hidden'); return; }
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    const latlng = L.latLng(position.coords.latitude, position.coords.longitude);
-                    const wp = appState.waypoints.find(w => w.id === id);
-                    if(wp) {
-                        wp.text = "Your Location";
-                        wp.latlng = latlng;
-                        wp.type = 'gps';
-                        if(appState.startMarker) appState.map.removeLayer(appState.startMarker);
-                        appState.startMarker = L.marker(latlng, { icon: L.divIcon({ className: 'custom-start-icon', html: '<div style="background-color:#1a73e8; width:14px; height:14px; border-radius:50%; border:2px solid white;"></div>' }) }).addTo(appState.map);
-                        appState.map.setView(latlng, 14);
-                        renderInputs();
-                    }
-                    els.loading.classList.add('hidden');
-                },
-                () => { alert("Location access denied"); els.loading.classList.add('hidden'); }
-            );
+            const getPos = (opts) => new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, opts || { enableHighAccuracy: true, timeout: 10000 }));
+            try {
+                const position = await getPos({ enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 });
+                const latlng = L.latLng(position.coords.latitude, position.coords.longitude);
+                const wp = appState.waypoints.find(w => w.id === id);
+                if (wp) {
+                    wp.text = 'Your Location'; wp.latlng = latlng; wp.type = 'gps';
+                    if (appState.startMarker) try { appState.map.removeLayer(appState.startMarker); } catch(e){}
+                    appState.startMarker = L.marker(latlng, { icon: L.divIcon({ className: 'custom-start-icon', html: '<div style="background-color:#1a73e8; width:14px; height:14px; border-radius:50%; border:2px solid white;"></div>' }) }).addTo(appState.map);
+                    appState.map.setView(latlng, 14);
+                    renderInputs();
+                }
+                    // Do NOT start a continuous watch here. Continuous follow is only enabled during navigation.
+            } catch (err) {
+                alert('Location error: ' + (err.message || 'permission denied'));
+            } finally {
+                els.loading.classList.add('hidden');
+            }
         }
 
-        function showWardSearch(inputElem) {
-            const matches = appState.allFeatures.slice(0, 10);
-            renderSearchResults(matches, inputElem);
-            inputElem.removeAttribute('readonly');
-            inputElem.focus();
-            inputElem.addEventListener('input', (e) => {
-                const term = e.target.value.toLowerCase().trim();
-                const filtered = appState.allFeatures.filter(f => {
-                    const name = getWardName(f.feature.properties);
-                    return name.toLowerCase().includes(term);
-                }).slice(0, 10);
-                renderSearchResults(filtered, inputElem);
-            });
-        }
+        // Simple debounce helper
+        function debounce(fn, wait) { let t = null; return (...args) => { clearTimeout(t); t = setTimeout(() => fn.apply(null, args), wait); }; }
 
+        // Show search results - supports local ward matches (feature+layer) and remote place objects from /geocode
         function renderSearchResults(matches, inputElem) {
             els.searchResults.innerHTML = '';
-            if(matches.length > 0) {
-                matches.forEach(match => {
-                    const name = getWardName(match.feature.properties);
-                    const div = document.createElement('div');
-                    div.className = 'search-result-item';
-                    div.innerHTML = `<span style="color:#d93025">📍</span> ${name}`;
+            if (!matches || matches.length === 0) { els.searchResults.classList.remove('active'); return; }
+
+            matches.forEach((match, idx) => {
+                // handle separator items
+                if (match && match.separator) {
+                    const header = document.createElement('div');
+                    header.className = 'search-result-item search-separator';
+                    header.innerText = (match.label || '');
+                    els.searchResults.appendChild(header);
+                    return;
+                }
+
+                const div = document.createElement('div');
+                div.className = 'search-result-item';
+                div.dataset.rindex = String(idx);
+
+                if (match.feature && match.layer) {
+                    const label = formatWardLabel(match.feature.properties);
+                    div.innerHTML = `<span style="color:#d93025">🏘️</span> ${label}`;
                     div.onclick = () => {
                         selectWard(match.layer);
                         updateWaypoint(appState.activeInputId, match.layer);
                         els.searchResults.classList.remove('active');
-                        inputElem.setAttribute('readonly', true);
                     };
-                    els.searchResults.appendChild(div);
-                });
-                els.searchResults.classList.add('active');
-                els.searchResults.style.top = (inputElem.parentElement.offsetTop + inputElem.parentElement.offsetHeight + 10) + 'px';
-            } else { els.searchResults.classList.remove('active'); }
+                } else if (match.display_name && match.lat && match.lon) {
+                    // remote place result
+                    div.innerHTML = `<span style="color:#188038">📌</span> ${match.display_name}`;
+                    div.onclick = () => {
+                        const place = { text: match.display_name, latlng: { lat: parseFloat(match.lat), lng: parseFloat(match.lon) }, source: 'nominatim' };
+                        applyPlaceToWaypoint(appState.activeInputId, place);
+                        els.searchResults.classList.remove('active');
+                    };
+                } else {
+                    div.innerText = (match.display_name || JSON.stringify(match)).slice(0, 200);
+                }
+                els.searchResults.appendChild(div);
+            });
+
+            // ensure dropdown starts scrolled to top so most relevant (remote) items are visible
+            try { els.searchResults.scrollTop = 0; } catch (e) {}
+            els.searchResults.classList.add('active');
+            // position dropdown relative to input's parent row
+            try { els.searchResults.style.top = (inputElem.parentElement.offsetTop + inputElem.parentElement.offsetHeight + 8) + 'px'; } catch (e) {}
         }
 
-        function getWardName(props) { return props.wardName || props.WARD_NAME || props.Name || `Ward ${props.wardNo}`; }
+        // Called when selecting a remote place result: set waypoint, center map, add temporary marker
+        function applyPlaceToWaypoint(id, place) {
+            const wp = appState.waypoints.find(w => w.id === id);
+            if (!wp) return;
+            wp.text = place.text || (place.display_name || 'Place');
+            wp.latlng = L.latLng(place.latlng.lat, place.latlng.lng);
+            wp.type = 'place';
+            renderInputs();
+            // focus the updated input so user can continue typing immediately
+            setTimeout(() => focusWaypointInput(id), 50);
+            try { appState.map.setView(wp.latlng, 15); } catch(e){}
+            // add temporary marker (remove after 10s or on navigation start)
+            try {
+                if (appState._tempPlaceMarker) { appState.map.removeLayer(appState._tempPlaceMarker); appState._tempPlaceMarker = null; }
+                appState._tempPlaceMarker = L.marker(wp.latlng, { title: wp.text }).addTo(appState.map);
+                setTimeout(() => { try { if (appState._tempPlaceMarker) { appState.map.removeLayer(appState._tempPlaceMarker); appState._tempPlaceMarker = null; } } catch(e){} }, 10000);
+            } catch(e) { console.warn('temp marker failed', e); }
+        }
+
+        // after updating a waypoint, focus its input so user can immediately type/replace
+        function focusWaypointInput(id) {
+            try {
+                const input = document.querySelector(`.directions-input[data-wp-id="${id}"]`);
+                if (input) { input.focus(); input.setSelectionRange(input.value.length, input.value.length); }
+            } catch (e) { console.warn('focusWaypointInput failed', e); }
+        }
+
+        // showWardSearch: enable editing on the clicked input, perform local-first search and query /geocode for global places
+        function showWardSearch(inputElem) {
+            if (!inputElem) return;
+            inputElem.removeAttribute('readonly');
+            inputElem.focus();
+            // ensure the dropdown is cleared
+            els.searchResults.innerHTML = '';
+
+            const fetchRemote = async (q) => {
+                // Try server-side proxy first (faster & hides email) then fallback to direct Nominatim if proxy fails
+                try {
+                    console.log('fetchRemote: trying proxy for', q);
+                    const res = await fetch(`/geocode?q=${encodeURIComponent(q)}&limit=8`);
+                    if (res.ok) {
+                        const data = await res.json();
+                        console.log('fetchRemote: proxy returned', data.length, 'items');
+                        if (Array.isArray(data) && data.length) return data;
+                        // if proxy returned empty array, continue to fallback
+                    } else {
+                        console.warn('Proxy /geocode returned status', res.status);
+                    }
+                } catch (e) { console.warn('Proxy /geocode request failed', e); }
+
+                // Fallback: direct call to Nominatim (client-side). Include a contact email if available via env-injected global.
+                try {
+                    console.log('fetchRemote: falling back to direct Nominatim for', q);
+                    const email = (window.NOMINATIM_EMAIL || '').toString();
+                    // build query params with optional viewbox bias to current map/data bounds and country restriction
+                    const params = new URLSearchParams();
+                    params.set('format', 'jsonv2');
+                    params.set('addressdetails', '1');
+                    params.set('limit', '8');
+                    params.set('q', q);
+
+                    // By default perform a global (not country- or viewbox-restricted) search
+                    // If you want stricter local-only search later we can toggle bounded=1 when a local body is explicitly requested.
+
+                    if (email) params.set('email', email);
+                    const url = 'https://nominatim.openstreetmap.org/search?' + params.toString();
+                    const r2 = await fetch(url, { headers: { 'Accept-Language': navigator.language || 'en' } });
+                    if (!r2.ok) { console.warn('Direct nominatim returned', r2.status); return []; }
+                    const d2 = await r2.json();
+                    console.log('fetchRemote: nominatim returned', Array.isArray(d2) ? d2.length : 0);
+                    return d2 || [];
+                } catch (e) { console.warn('Direct nominatim fetch failed', e); return []; }
+            };
+
+            const doSearch = async () => {
+                const q = (inputElem.value || '').trim();
+                const localMatches = [];
+
+                // Always get all local wards for the current body
+                appState.allFeatures.forEach(f => localMatches.push(f));
+
+                const normalizedLocal = localMatches.map(x => ({ feature: x.feature, layer: x.layer }));
+                let results = [];
+
+                if (q.length > 0) {
+                    // User is typing, prioritize remote search
+                    renderSearchResults([{ separator: true, label: 'Searching global places...' }], inputElem);
+                    const remote = await fetchRemote(q);
+                    let remList = Array.isArray(remote) ? remote.slice() : [];
+                    remList.sort((a,b) => (b.importance || 0) - (a.importance || 0));
+                    const qlow = q.toLowerCase();
+                    const remFiltered = remList.filter(r => (r.display_name || '').toLowerCase().includes(qlow));
+                    const chosen = (remFiltered.length ? remFiltered : remList).slice(0,6);
+                    const remNorm = chosen.map(r => ({ display_name: r.display_name, lat: r.lat, lon: r.lon }));
+
+                    if (remNorm.length) {
+                        results = results.concat(remNorm);
+                    }
+
+                    // Also search local matches
+                    const ql = q.toLowerCase();
+                    const filteredLocal = normalizedLocal.filter(item => {
+                        const p = item.feature.properties || {};
+                        const name = (getWardName(p) || '').toString().toLowerCase();
+                        return name.includes(ql);
+                    });
+
+                    if (filteredLocal.length) {
+                        results = results.concat([{ separator: true, label: 'Local Wards' }]).concat(filteredLocal);
+                    }
+
+                } else {
+                    // Query is empty, show all local wards
+                    results = normalizedLocal;
+                }
+
+                renderSearchResults(results, inputElem);
+            };
+
+
+            const debounced = debounce(doSearch, 300);
+
+            // keyboard navigation state
+            let highlighted = -1;
+            const itemsForNavigation = () => Array.from(els.searchResults.querySelectorAll('.search-result-item:not(.search-separator)'));
+            function clearHighlight() {
+                itemsForNavigation().forEach(i => i.classList.remove('active'));
+                highlighted = -1;
+            }
+            function highlightAt(idx) {
+                const items = itemsForNavigation();
+                if (!items.length) return;
+                if (idx < 0) idx = 0; if (idx >= items.length) idx = items.length - 1;
+                clearHighlight();
+                const el = items[idx];
+                if (el) { el.classList.add('active'); el.scrollIntoView({ block: 'nearest' }); highlighted = idx; }
+            }
+            function selectHighlighted() {
+                const items = itemsForNavigation();
+                if (highlighted >= 0 && highlighted < items.length) {
+                    const el = items[highlighted];
+                    if (el) el.click();
+                }
+            }
+
+            // attach input event
+            const onInput = (e) => { debounced(); };
+            const onKeyDown = (e) => {
+                if (!els.searchResults.classList.contains('active')) {
+                    if (e.key === 'Escape') { inputElem.blur(); }
+                    return;
+                }
+                const items = itemsForNavigation();
+                if (e.key === 'ArrowDown') { e.preventDefault(); if (items.length) highlightAt((highlighted === -1 ? 0 : Math.min(highlighted + 1, items.length - 1))); }
+                else if (e.key === 'ArrowUp') { e.preventDefault(); if (items.length) highlightAt((highlighted === -1 ? items.length - 1 : Math.max(highlighted - 1, 0))); }
+                else if (e.key === 'Enter') { e.preventDefault(); selectHighlighted(); }
+                else if (e.key === 'Escape') { els.searchResults.classList.remove('active'); inputElem.blur(); clearHighlight(); }
+            };
+
+            inputElem.addEventListener('input', onInput);
+            inputElem.addEventListener('keydown', onKeyDown);
+            // run initial search
+            debounced();
+
+            // remove listeners when dropdown closed or on selection (cleanup handled on selection)
+        }
+
+        function getWardName(props) {
+            if (!props) return 'Ward';
+            return props.Ward_Name || props.WARD_NAME || props.Ward || props.wardName || props.Name || props.name || `Ward ${props.Ward_No || props.WardNo || props.wardNo || ''}`;
+        }
 
         // --- MAP & FETCHING ---
         function populateWardDropdown(data) {
-            els.wardSelect.innerHTML = '<option value="">-- Optional: Select a specific ward --</option>'; els.wardSelect.disabled = false;
+            els.wardSelect.innerHTML = '<option value="">-- Optional: Select a specific ward --</option>';
+            els.wardSelect.disabled = false;
             let wards = [];
-            data.features.forEach(f => { wards.push({ name: getWardName(f.properties), num: parseInt(f.properties.wardNo || 0) || 9999 }); });
+            data.features.forEach(f => {
+                const p = f.properties || {};
+                const name = getWardName(p);
+                const num = parseInt(p.Ward_No || p.WardNo || p.Ward_No || p.Ward_No || p.WardNumber || p.Ward_No || p.Ward_No || p.Ward_No || p.Ward_No || p.Ward_No || p.Ward_No || p.Ward_No || p.Ward_No || p.Ward_No || p.Ward_No || p.Ward_No || p.Ward_No || p.Ward_No || p.Ward_No || p.Ward_No || p.Ward_No || p.Ward_No || p.Ward_No || p.Ward_No || p.Ward_No || p.Ward_No || p.Ward_No || p.Ward_No || p.Ward_No || p.Ward_No || p.Ward_No || p.Ward_No || p.Ward_No || p.Ward_No || p.Ward_No) || 9999;
+                wards.push({ name, num });
+            });
             wards.sort((a, b) => a.num - b.num);
             wards.forEach(w => { const opt = document.createElement('option'); opt.value = w.name; opt.textContent = w.name; els.wardSelect.appendChild(opt); });
         }
 
         async function fetchGeoJsonFromRepo(district, localBody) {
-             const cleanDistrict = encodeURIComponent(district); const rawBody = localBody;
-             const variations = [`${encodeURIComponent(rawBody)}.json`, `${encodeURIComponent(rawBody)}.geojson`, `${rawBody.replace(/ /g, '_')}.json`, `${rawBody.replace(/ /g, '_')}.geojson`];
-             for (const fileName of variations) {
-                 const url = `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/${GITHUB_BRANCH}/${cleanDistrict}/${fileName}`;
-                 try { const res = await fetch(url); if (res.ok) return await res.json(); } catch (e) {}
-             }
-             throw new Error("File not found");
+            // First try local bundled GeoJSON (faster and works offline)
+            try {
+                const localRes = await fetch('/data/KL_Wards.geojson');
+                if (localRes.ok) {
+                    const full = await localRes.json();
+                    // Filter features by LocalBody (preferred) or by District if LocalBody not matched
+                            const features = full.features.filter(f => {
+                                const p = f.properties || {};
+
+                                // Common property keys observed across different GeoJSON sources
+                                const propLocalBody = (p.LSGD || p.Lsgd || p.LSGD_NAME || p.Lsgd_Name || p.LocalBody || p.LOCALBODY || p.Local_Body || p.Localbody || p.localBody || p.Body || p.Local || p.NAME) || '';
+                                const propType = (p.Lsgd_Type || p.LsgdType || p.LSGD_TYPE || p.Type || p.TYPE || p.lsgd_type) || '';
+                                const propDistrict = (p.District || p.DISTRICT || p.DIST_NAME || p.DIST || p.DISTNAME || p.DName || p.districtname) || '';
+
+                                const lbVal = String(propLocalBody).toLowerCase().trim();
+                                const typeVal = String(propType).toLowerCase().trim();
+                                const distVal = String(propDistrict).toLowerCase().trim();
+
+                                // If localBody is provided, require match by local body name
+                                if (localBody) {
+                                    if (!lbVal) return false; // property missing -> cannot match
+                                    return lbVal.includes(String(localBody).toLowerCase().trim());
+                                }
+
+                                // If only district is provided, require match by district
+                                if (district) {
+                                    if (!distVal) return false;
+                                    return distVal.includes(String(district).toLowerCase().trim());
+                                }
+
+                                // No filters provided: keep all
+                                return true;
+                            });
+                            // Debug: log sample property keys and counts
+                            console.log('📊 Local load: features before filter=', full.features.length, 'after filter=', features.length);
+                            if (features.length > 0) {
+                                const sample = features[0].properties || {};
+                                console.log('🔑 Sample properties keys:', Object.keys(sample).slice(0,30));
+                            }
+                    return { type: 'FeatureCollection', features };
+                }
+            } catch (e) {
+                // fallthrough to remote fetch
+            }
+
+            // Fallback: try GitHub raw paths (original behavior)
+            const cleanDistrict = encodeURIComponent(district); const rawBody = localBody;
+            const variations = [`${encodeURIComponent(rawBody)}.json`, `${encodeURIComponent(rawBody)}.geojson`, `${rawBody.replace(/ /g, '_')}.json`, `${rawBody.replace(/ /g, '_')}.geojson`];
+            for (const fileName of variations) {
+                const url = `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/${GITHUB_BRANCH}/${cleanDistrict}/${fileName}`;
+                try { const res = await fetch(url); if (res.ok) return await res.json(); } catch (e) {}
+            }
+            throw new Error("File not found");
         }
 
-        function renderTypeButtons() { els.typeContainer.innerHTML = ''; if(!appState.district) return; localBodyTypes.forEach(t => { const btn = document.createElement('button'); btn.className = 'type-btn'; btn.textContent = t.name; btn.onclick = () => { document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('selected')); btn.classList.add('selected'); appState.type = t.id; populateBodies(); }; els.typeContainer.appendChild(btn); }); }
-        function populateBodies() { els.bodySelect.innerHTML = '<option value="">-- Select Local Body --</option>'; els.bodySelect.disabled = false; let list = (mockLocalBodies[appState.district] && mockLocalBodies[appState.district][appState.type]) ? mockLocalBodies[appState.district][appState.type] : [`${appState.district} Body 1`, `${appState.district} Body 2`]; list.forEach(item => { const opt = document.createElement('option'); opt.value = item; opt.textContent = item; els.bodySelect.appendChild(opt); }); }
+        function renderTypeButtons() {
+            els.typeContainer.innerHTML = '';
+            if(!appState.district) return;
+
+            // If we have prepared local metadata, use its types for this district
+            const metaKey = findMetadataDistrictKey(appState.district);
+            if (localMetadata && metaKey && localMetadata[metaKey]) {
+                const types = Object.keys(localMetadata[metaKey]);
+                types.forEach(typeName => {
+                    const btn = document.createElement('button');
+                    btn.className = 'type-btn';
+                    btn.textContent = typeName;
+                    btn.onclick = () => {
+                        document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('selected'));
+                        btn.classList.add('selected');
+                        appState.type = typeName;
+                        populateBodies();
+                    };
+                    els.typeContainer.appendChild(btn);
+                });
+                return;
+            }
+
+            // Fallback to default type list
+            localBodyTypes.forEach(t => {
+                const btn = document.createElement('button'); btn.className = 'type-btn'; btn.textContent = t.name; btn.onclick = () => { document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('selected')); btn.classList.add('selected'); appState.type = t.id; populateBodies(); }; els.typeContainer.appendChild(btn);
+            });
+        }
+
+        function populateBodies() {
+            els.bodySelect.innerHTML = '<option value="">-- Select Local Body --</option>';
+            els.bodySelect.disabled = false;
+
+            // Use localMetadata when available
+            const metaKey = findMetadataDistrictKey(appState.district);
+            if (localMetadata && metaKey && localMetadata[metaKey] && localMetadata[metaKey][appState.type]) {
+                const list = localMetadata[metaKey][appState.type];
+                list.forEach(item => { const opt = document.createElement('option'); opt.value = item; opt.textContent = item; els.bodySelect.appendChild(opt); });
+                return;
+            }
+
+            // Fallback: use mockLocalBodies or generic placeholders
+            let list = (mockLocalBodies[appState.district] && mockLocalBodies[appState.district][appState.type]) ? mockLocalBodies[appState.district][appState.type] : [`${appState.district} Body 1`, `${appState.district} Body 2`];
+            list.forEach(item => { const opt = document.createElement('option'); opt.value = item; opt.textContent = item; els.bodySelect.appendChild(opt); });
+        }
         function switchScreen(name) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); els.screens[name].classList.add('active'); els.searchResults.classList.remove('active'); if(name === 'map' && appState.map) setTimeout(() => appState.map.invalidateSize(), 200); }
         
         function initMap() { 
             if(appState.map) return; 
             // attributionControl: false removes the "Leaflet | CARTO" text
-            appState.map = L.map('mapContainer', { zoomControl: false, attributionControl: false }).setView([10.8505, 76.2711], 8); 
-            L.control.zoom({ position: 'bottomright' }).addTo(appState.map); 
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { 
-                subdomains: 'abcd', 
-                maxZoom: 20 
-            }).addTo(appState.map); 
+            appState.map = L.map('mapContainer', { zoomControl: false, attributionControl: true }).setView([10.8505, 76.2711], 8);
+
+            // Layers: Satellite, Street, Hybrid
+            const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: '© Esri', maxZoom: 18 });
+            const streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap', maxZoom: 19 });
+            const hybridLayer = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { attribution: '© Google', maxZoom: 20 });
+
+            // Default: satellite
+            satelliteLayer.addTo(appState.map);
+
+            // Layer switcher control
+            L.control.layers({ '🛰️ Satellite': satelliteLayer, '🗺️ Street Map': streetLayer, '🖼️ Hybrid': hybridLayer }, null, { position: 'topright' }).addTo(appState.map);
+
+            // Add floating locate button into map container
+            try {
+                const btn = document.createElement('button');
+                btn.className = 'locate-btn';
+                btn.title = 'Click = set current location. Start Travel = begin live-follow';
+                btn.innerHTML = '<i class="fa-solid fa-location-arrow"></i>';
+                btn.addEventListener('click', async (ev) => {
+                    // prevent clicks from bubbling to underlying controls
+                    try { ev.stopPropagation(); ev.preventDefault(); } catch (_) {}
+                    // One-shot: update the first waypoint to current position when location button clicked
+                    try {
+                        const first = appState.waypoints && appState.waypoints[0];
+                        if (first) {
+                            await setWaypointToGPS(first.id);
+                        } else {
+                            // if no waypoints exist, create a start waypoint
+                            const id = Date.now();
+                            appState.waypoints.unshift({ id, text: 'Your Location', latlng: null, type: 'gps' });
+                            renderInputs();
+                            await setWaypointToGPS(id);
+                        }
+                    } catch (e) { console.warn('Locate button failed', e); }
+                });
+                // ensure the button is placed within the map container
+                appState.map.getContainer().appendChild(btn);
+            } catch (e) { console.warn('Failed to add locate button', e); }
         }
         
         async function fetchData() {
@@ -763,8 +1210,24 @@
                     appState.allFeatures.push({ feature, layer });
                     layer.on('click', (e) => {
                         L.DomEvent.stopPropagation(e);
-                        selectWard(layer);
-                        updateWaypoint(appState.activeInputId, layer);
+                        // Only allow ward selection/popups if the feature belongs to the selected local body (if any)
+                        try {
+                            const p = feature.properties || {};
+                            const propLocalBody = (p.LSGD || p.Lsgd || p.LSGD_NAME || p.Lsgd_Name || p.LocalBody || p.LOCALBODY || p.Local_Body || p.Localbody || p.localBody || p.Body || p.Local || p.NAME) || '';
+                            const selected = (appState.localBody || '').toString().toLowerCase().trim();
+                            const lbVal = (propLocalBody || '').toString().toLowerCase().trim();
+                            if (selected && lbVal && lbVal.includes(selected)) {
+                                selectWard(layer);
+                                updateWaypoint(appState.activeInputId, layer);
+                                // show formatted popup
+                                const label = formatWardLabel(p);
+                                try { layer.bindPopup(`<div style="font-weight:700;">${label}</div>`).openPopup(); } catch(e) { console.warn('popup failed', e); }
+                            } else {
+                                // If no local body selected, still allow selecting but don't show popup
+                                selectWard(layer);
+                                updateWaypoint(appState.activeInputId, layer);
+                            }
+                        } catch (err) { console.warn('ward click handler error', err); selectWard(layer); updateWaypoint(appState.activeInputId, layer); }
                     });
                 }
             }).addTo(appState.map);
@@ -780,10 +1243,21 @@
 
         // --- NAVIGATION LOGIC ---
         async function startMultiStopNavigation() {
-            const stops = appState.waypoints.filter(w => w.latlng);
-            if (stops.length < 2) { alert("Please set at least a start and end location"); return; }
+                // If start waypoint not set, attempt to get current GPS and set it
+                try {
+                    const firstWp = appState.waypoints[0];
+                    if (firstWp && !firstWp.latlng && navigator.geolocation) {
+                        // await the helper which will populate the waypoint and start a watch
+                        await setWaypointToGPS(firstWp.id);
+                    }
+                } catch (e) { console.warn('Auto-start GPS failed', e); }
+
+                const stops = appState.waypoints.filter(w => w.latlng);
+                if (stops.length < 2) { alert("Please set at least a start and end location"); return; }
 
             appState.isNavigating = true;
+            // When navigation starts, enable continuous follow (start location watch)
+            try { startLocateWatch(); } catch (e) { console.warn('Failed to start locate watch on navigation start', e); }
             els.sidebarPanel.classList.add('nav-hidden');
             els.mapContainer.classList.add('nav-active');
             els.fabContainer.style.display = 'none';
@@ -813,7 +1287,24 @@
                 if(appState.navRouteLine) appState.map.removeLayer(appState.navRouteLine);
                 appState.navRouteLine = L.polyline(coordinates, { color: '#4285F4', weight: 8, opacity: 0.8 }).addTo(appState.map);
 
-                animateAlongRoute(coordinates);
+                // If a location watch is active, use live GPS updates instead of simulated animation
+                if (navigator.geolocation && appState.locationWatchId) {
+                    try {
+                        // initialize user puck at current known position (startMarker or first stop)
+                        const startPos = (appState.startMarker && appState.startMarker.getLatLng()) || stops[0].latlng || coordinates[0];
+                        if (appState.userPuck) { appState.userPuck.setLatLng(startPos); } else { const icon = L.divIcon({ className: 'user-puck', iconSize: [20,20] }); appState.userPuck = L.marker(startPos, { icon: icon, zIndexOffset: 1000 }).addTo(appState.map); }
+                        appState.map.setView(startPos, Math.max(appState.map.getZoom(), 16));
+                        // initial UI update (compute remaining)
+                        const coordsArr = appState.navRouteLine.getLatLngs();
+                        let minD = Infinity, minIdx = 0; for (let i = 0; i < coordsArr.length; i++) { const d = startPos.distanceTo(coordsArr[i]); if (d < minD) { minD = d; minIdx = i; } }
+                        let rem = startPos.distanceTo(coordsArr[minIdx]); for (let j = minIdx; j < coordsArr.length - 1; j++) rem += coordsArr[j].distanceTo(coordsArr[j+1]);
+                        document.getElementById('step-dist').innerText = Math.round(rem) + 'm';
+                        document.getElementById('total-dist').innerText = (rem/1000).toFixed(1) + ' km';
+                        document.getElementById('total-time').innerText = Math.ceil(rem/500) + ' min';
+                    } catch(e) { console.warn('Init live-follow failed', e); animateAlongRoute(coordinates); }
+                } else {
+                    animateAlongRoute(coordinates);
+                }
 
             } catch (e) {
                 console.error(e);
@@ -874,6 +1365,132 @@
             }
         }
 
+        // Compute remaining distance along polyline by projecting to nearest segment
+        function computeRemainingDistanceAlongPolyline(point, latlngs) {
+            if (!latlngs || latlngs.length === 0) return 0;
+            // helper: project point P onto segment AB (in lat/lng space)
+            function project(P, A, B) {
+                const vx = B.lng - A.lng, vy = B.lat - A.lat;
+                const wx = P.lng - A.lng, wy = P.lat - A.lat;
+                const vlen2 = vx*vx + vy*vy;
+                if (vlen2 === 0) return { pt: A, t: 0 };
+                let t = (wx*vx + wy*vy) / vlen2;
+                if (t < 0) t = 0; if (t > 1) t = 1;
+                return { pt: L.latLng(A.lat + vy*t, A.lng + vx*t), t };
+            }
+
+            let best = { dist: Infinity, segIdx: 0, t: 0, proj: null };
+            for (let i = 0; i < latlngs.length - 1; i++) {
+                const A = latlngs[i], B = latlngs[i+1];
+                const res = project(point, A, B);
+                const d = point.distanceTo(res.pt);
+                if (d < best.dist) best = { dist: d, segIdx: i, t: res.t, proj: res.pt };
+            }
+
+            // remaining distance = distance from projected point to end of polyline
+            let rem = 0;
+            // from proj to B
+            const segEnd = latlngs[best.segIdx+1];
+            rem += best.proj.distanceTo(segEnd);
+            // add remaining segments
+            for (let j = best.segIdx+1; j < latlngs.length - 1; j++) {
+                rem += latlngs[j].distanceTo(latlngs[j+1]);
+            }
+            return rem;
+        }
+
+        function formatWardLabel(props) {
+            if (!props) return '';
+            const name = props.Ward_Name || props.WARD_NAME || props.Ward || props.wardName || props.Name || props.name || '';
+            const num = props.Ward_No || props.WardNo || props.WardNumber || props.wardNo || props.Ward || '';
+            // prefer numeric extraction
+            const n = (typeof num === 'number') ? num : (parseInt(String(num).replace(/[^0-9]/g,'')) || '');
+            if (n) return `${n}. : ${name}`;
+            return `${name}`;
+        }
+        
+        // Snap a point to the nearest point on a polyline (returns snapped LatLng and index)
+        function snapPointToPolyline(point, latlngs) {
+            if (!latlngs || latlngs.length === 0) return { snapped: point, index: 0 };
+            let best = { dist: Infinity, segIdx: 0, t: 0, proj: null };
+            for (let i = 0; i < latlngs.length - 1; i++) {
+                const A = latlngs[i], B = latlngs[i+1];
+                const vx = B.lng - A.lng, vy = B.lat - A.lat;
+                const wx = point.lng - A.lng, wy = point.lat - A.lat;
+                const vlen2 = vx*vx + vy*vy;
+                let t = 0;
+                if (vlen2 !== 0) t = (wx*vx + wy*vy) / vlen2;
+                if (t < 0) t = 0; if (t > 1) t = 1;
+                const proj = L.latLng(A.lat + vy*t, A.lng + vx*t);
+                const d = point.distanceTo(proj);
+                if (d < best.dist) best = { dist: d, segIdx: i, t, proj };
+            }
+            return { snapped: best.proj || point, index: best.segIdx };
+        }
+
+        // Compute bearing from A to B in degrees
+        function computeBearing(a, b) {
+            const toRad = Math.PI / 180; const toDeg = 180 / Math.PI;
+            const lat1 = a.lat * toRad, lat2 = b.lat * toRad;
+            const dLon = (b.lng - a.lng) * toRad;
+            const y = Math.sin(dLon) * Math.cos(lat2);
+            const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon);
+            let brng = Math.atan2(y, x) * toDeg;
+            brng = (brng + 360) % 360;
+            return brng;
+        }
+
+        // Smooth heading (low-pass)
+        function smoothHeading(prev, next, alpha = 0.2) {
+            if (prev == null) return next;
+            // shortest angular difference
+            let diff = ((next - prev + 540) % 360) - 180;
+            return (prev + diff * alpha + 360) % 360;
+        }
+
+        // Replan route from current location to remaining waypoints via OSRM
+        async function replanRoute(fromLatLng) {
+            try {
+                const stops = appState.waypoints.filter(w => w.latlng && !(w.type === 'gps' && w.id === appState.waypoints[0].id));
+                // build coords: current location + remaining stops
+                const coords = [ `${fromLatLng.lng},${fromLatLng.lat}` ];
+                stops.forEach(s => coords.push(`${s.latlng.lng},${s.latlng.lat}`));
+                if (coords.length < 2) return; // nothing to route
+                let profile = 'driving'; if (appState.transportMode === 'walking') profile = 'walking'; if (appState.transportMode === 'cycling') profile = 'cycling';
+                const url = `https://router.project-osrm.org/route/v1/${profile}/${coords.join(';')}?overview=full&geometries=geojson&steps=true`;
+                const res = await fetch(url);
+                const json = await res.json();
+                if (!json || json.code !== 'Ok') throw new Error('Replan failed');
+                const route = json.routes[0];
+                const coordinates = route.geometry.coordinates.map(c => L.latLng(c[1], c[0]));
+                if (appState.navRouteLine) appState.map.removeLayer(appState.navRouteLine);
+                appState.navRouteLine = L.polyline(coordinates, { color: '#4285F4', weight: 8, opacity: 0.8 }).addTo(appState.map);
+                appState.routeSteps = []; route.legs.forEach(leg => appState.routeSteps.push(...leg.steps));
+                // reset last announced step so new announcements occur
+                appState.lastAnnouncedStep = null; appState.lastAnnouncedStage = null;
+                console.log('Rerouted: new route length', coordinates.length);
+            } catch (e) { console.warn('replanRoute failed', e); }
+        }
+
+        // Device orientation handlers (optional map rotation)
+        appState.rotateMapEnabled = false; appState._deviceOrientationHandler = null;
+        function startDeviceOrientation() {
+            if (!window.DeviceOrientationEvent) return;
+            if (appState._deviceOrientationHandler) return;
+            appState._deviceOrientationHandler = (ev) => {
+                // alpha is rotation around z-axis (0..360), we interpret as heading
+                let heading = ev.alpha;
+                if (typeof ev.webkitCompassHeading === 'number') heading = ev.webkitCompassHeading;
+                if (heading == null) return;
+                // rotate map container for demo (inverse so map rotates to heading)
+                if (appState.rotateMapEnabled && appState.map) {
+                    try { appState.map.getContainer().style.transform = `rotate(${-heading}deg)`; } catch (e) {}
+                }
+            };
+            window.addEventListener('deviceorientationabsolute' in window ? 'deviceorientationabsolute' : 'deviceorientation', appState._deviceOrientationHandler);
+        }
+        function stopDeviceOrientation() { if (appState._deviceOrientationHandler) { window.removeEventListener('deviceorientation', appState._deviceOrientationHandler); appState._deviceOrientationHandler = null; } if (appState.map) appState.map.getContainer().style.transform = ''; }
+
         function stopNavigationDemo() {
             appState.isNavigating = false;
             if(appState.simulationInterval) clearInterval(appState.simulationInterval);
@@ -881,9 +1498,281 @@
             if(appState.navRouteLine) appState.map.removeLayer(appState.navRouteLine);
             if(appState.userPuck) appState.map.removeLayer(appState.userPuck);
             if(appState.selectedLayer) appState.map.fitBounds(appState.selectedLayer.getBounds());
+            // stop continuous location watch when navigation ends
+            try { stopLocationWatch(); } catch (e) { console.warn('Failed to stop locate watch on navigation end', e); }
+        }
+
+        // Stop live location watch (if any)
+        function stopLocationWatch() {
+            if (appState.locationWatchId && navigator.geolocation) {
+                try { navigator.geolocation.clearWatch(appState.locationWatchId); } catch(e) {}
+                appState.locationWatchId = null;
+                console.log('Stopped location watch');
+                // remove accuracy circle if present
+                try { if (appState.accuracyCircle) { appState.map.removeLayer(appState.accuracyCircle); appState.accuracyCircle = null; } } catch(e){}
+                try { const btn = appState.map && appState.map.getContainer().querySelector('.locate-btn'); if (btn) btn.style.background = '#1a73e8'; } catch(e){}
+            }
+        }
+
+        // Utility: Toggle live-follow locate button (will pan map to live location)
+        function toggleLiveFollow(enable) {
+            if (!navigator.geolocation) { alert('Geolocation not supported'); return; }
+            if (enable) {
+                if (!appState.locationWatchId) {
+                    appState.locationWatchId = navigator.geolocation.watchPosition((pos) => {
+                        const ll = L.latLng(pos.coords.latitude, pos.coords.longitude);
+                        if (appState.startMarker) appState.startMarker.setLatLng(ll); else {
+                            appState.startMarker = L.marker(ll, { icon: L.divIcon({ className: 'custom-start-icon', html: '<div style="background-color:#1a73e8; width:14px; height:14px; border-radius:50%; border:2px solid white;"></div>' }) }).addTo(appState.map);
+                        }
+                        // center map gently
+                        if (appState.map) appState.map.setView(ll, Math.max(appState.map.getZoom(), 14));
+                    }, (e) => { console.warn('watch error', e); }, { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 });
+                }
+            } else {
+                stopLocationWatch();
+            }
+        }
+
+        // Start a dedicated locate watch and show accuracy circle
+        function startLocateWatch() {
+            if (!navigator.geolocation) { alert('Geolocation not supported'); return; }
+            if (appState.locationWatchId) return; // already watching
+            try {
+                appState.locationWatchId = navigator.geolocation.watchPosition((pos) => {
+                    const ll = L.latLng(pos.coords.latitude, pos.coords.longitude);
+                    // update marker or create
+                    if (appState.startMarker) {
+                        appState.startMarker.setLatLng(ll);
+                    } else {
+                        appState.startMarker = L.marker(ll, { icon: L.divIcon({ className: 'custom-start-icon', html: '<div style="background-color:#1a73e8; width:18px; height:18px; border-radius:50%; border:3px solid white;"></div>' }) }).addTo(appState.map);
+                    }
+                    // ensure the first waypoint reflects live GPS so navigation can use it
+                    try {
+                        const wp = appState.waypoints && appState.waypoints[0];
+                        if (wp) { wp.latlng = ll; wp.text = 'Your Location'; wp.type = 'gps'; renderInputs(); }
+                    } catch (e) { console.warn('Failed to update first waypoint from locate watch', e); }
+
+                    // If navigating, update the user puck and navigation UI instead of just centering
+                    if (appState.isNavigating && appState.navRouteLine && appState.routeSteps && appState.routeSteps.length > 0) {
+                        try {
+                            // stop any simulation
+                            if (appState.simulationInterval) { clearInterval(appState.simulationInterval); appState.simulationInterval = null; }
+
+                            // create or move user puck (we will snap it to route for map-matching feel)
+                            if (!appState.userPuck) {
+                                const icon = L.divIcon({ className: 'user-puck', iconSize: [20,20] });
+                                appState.userPuck = L.marker(ll, { icon: icon, zIndexOffset: 1000 }).addTo(appState.map);
+                            }
+
+                            // snap GPS to route and compute remaining
+                            try {
+                                const coords = appState.navRouteLine.getLatLngs();
+                                const snap = snapPointToPolyline(ll, coords);
+                                const snapped = snap.snapped;
+                                // place puck at snapped location
+                                appState.userPuck.setLatLng(snapped);
+
+                                const rem = computeRemainingDistanceAlongPolyline(snapped, coords);
+                                document.getElementById('step-dist').innerText = Math.round(rem) + 'm';
+                                document.getElementById('total-dist').innerText = (rem/1000).toFixed(1) + ' km';
+                                document.getElementById('total-time').innerText = Math.ceil(rem/500) + ' min';
+
+                                // update instructions using snapped location
+                                updateInstructions(snapped);
+
+                                // compute heading and rotate puck smoothly
+                                try {
+                                    const prev = appState._lastHeading || null;
+                                    const segIndex = Math.max(0, Math.min(coords.length-1, snap.index));
+                                    const ahead = coords[Math.min(coords.length-1, segIndex+3)];
+                                    const bearing = computeBearing(snapped, ahead || coords[segIndex]);
+                                    appState._lastHeading = smoothHeading(prev, bearing, 0.25);
+                                    const el = appState.userPuck && appState.userPuck._icon;
+                                    if (el) el.style.transform = `rotate(${appState._lastHeading}deg)`;
+                                } catch(e){ console.warn('heading compute failed', e); }
+
+                                // follow map if enabled
+                                if (appState.followWhileNav && appState.map) {
+                                    console.log("Following user location. Centering map.");
+                                    appState.map.setView(snapped, Math.max(appState.map.getZoom(), 16));
+                                }
+
+                                // off-route detection: distance from raw GPS to snapped point
+                                try {
+                                    const distFromRoute = ll.distanceTo(snapped);
+                                    if (distFromRoute > 40) {
+                                        const now = Date.now();
+                                        if (!appState._lastRerouteAt || (now - appState._lastRerouteAt) > 8000) {
+                                            appState._lastRerouteAt = now;
+                                            replanRoute(ll);
+                                        }
+                                    }
+                                } catch(e) { console.warn('off-route detection failed', e); }
+                            } catch (e) { console.warn('snap/remaining calc failed', e); }
+
+                        } catch (errNav) { console.warn('Live nav update error', errNav); }
+                        return; // we've handled navigation-specific update
+                    }
+
+                    // accuracy circle (non-nav)
+                    try {
+                        if (appState.accuracyCircle) {
+                            appState.accuracyCircle.setLatLng(ll).setRadius(pos.coords.accuracy || 25);
+                        } else {
+                            appState.accuracyCircle = L.circle(ll, { radius: pos.coords.accuracy || 25, color: '#1a73e8', weight: 1, fillOpacity: 0.08 }).addTo(appState.map);
+                        }
+                    } catch (e) { console.warn('accuracy circle error', e); }
+                    // center map
+                    if (appState.map) appState.map.setView(ll, Math.max(appState.map.getZoom(), 16));
+                }, (err) => {
+                    console.warn('Locate watch error', err);
+                    if (err && err.code === 1) alert('Location permission denied');
+                }, { enableHighAccuracy: true, maximumAge: 3000, timeout: 10000 });
+            } catch (e) { console.warn('startLocateWatch failed', e); }
         }
 
         init();
+
+        function findAndSelectLocation() {
+            console.log('🛰️ Auto-detecting and selecting location...');
+            if (!navigator.geolocation) {
+                alert('Geolocation is not supported by your browser.');
+                return;
+            }
+
+            els.loading.classList.remove('hidden');
+
+            navigator.geolocation.getCurrentPosition(
+                async function(position) {
+                    const userLat = position.coords.latitude;
+                    const userLng = position.coords.longitude;
+                    console.log(`🌍 User location determined: ${userLat}, ${userLng}`);
+
+                    // The geojson data is loaded from /data/KL_Wards.geojson
+                    // I will fetch it again to make sure I have it.
+                    let fullGeoJsonData;
+                    try {
+                        const res = await fetch('/data/KL_Wards.geojson');
+                        if (!res.ok) throw new Error('Could not fetch KL_Wards.geojson');
+                        fullGeoJsonData = await res.json();
+                    } catch (error) {
+                        console.error('Error loading GeoJSON data:', error);
+                        alert('Error loading ward data. Please try again.');
+                        els.loading.classList.add('hidden');
+                        return;
+                    }
+
+
+                    if (!fullGeoJsonData || !fullGeoJsonData.features) {
+                        alert('Ward data is not loaded or invalid. Please wait a moment and try again.');
+                        els.loading.classList.add('hidden');
+                        return;
+                    }
+
+                    // Find the ward that contains the user's location
+                    const foundWard = fullGeoJsonData.features.find(feature => {
+                        return isPointInGeoJSON(userLat, userLng, feature.geometry);
+                    });
+
+                    if (foundWard) {
+                        const props = foundWard.properties;
+                        const district = props.District;
+                        const type = props.Lsgd_Type; // This is the type name e.g. "Municipality"
+                        const body = props.LSGD;
+
+                        console.log(`✅ Found user in: ${district} > ${type} > ${body}`);
+
+                        // Set the app state
+                        appState.district = district;
+                        appState.type = type;
+                        appState.localBody = body;
+
+
+                        // Programmatically update the UI
+                        els.districtSelect.value = district;
+                        // dispatching the event is important to trigger the dependent dropdowns
+                        els.districtSelect.dispatchEvent(new Event('change'));
+
+                        // Wait for the type buttons to be rendered
+                        setTimeout(() => {
+                            const typeButtons = els.typeContainer.querySelectorAll('.type-btn');
+                            let typeButtonClicked = false;
+                            typeButtons.forEach(btn => {
+                                // The button textContent should match the 'type' from the GeoJSON
+                                if (btn.textContent.trim().toLowerCase() === type.trim().toLowerCase()) {
+                                    btn.click();
+                                    typeButtonClicked = true;
+                                }
+                            });
+
+                            if (!typeButtonClicked) {
+                                console.error(`Could not find a type button for "${type}"`);
+                                els.loading.classList.add('hidden');
+                                alert(`Could not automatically select the local body type "${type}".`);
+                                return;
+                            }
+
+                            // Wait for the body select to be populated
+                            setTimeout(() => {
+                                els.bodySelect.value = body;
+                                // Manually set appState.localBody and trigger viewMapBtn
+                                appState.localBody = body;
+                                els.viewBtn.disabled = false;
+                                els.viewBtn.click(); // Directly click the button to show the map
+                                els.loading.classList.add('hidden');
+
+                            }, 500);
+                        }, 500);
+
+                    } else {
+                        alert('Could not automatically determine your ward. You may be outside the mapped areas of Kerala.');
+                        els.loading.classList.add('hidden');
+                    }
+                },
+                function(error) {
+                    alert(`Geolocation error: ${error.message}`);
+                    els.loading.classList.add('hidden');
+                },
+                { enableHighAccuracy: true }
+            );
+        }
+
+        // Point-in-polygon helper function
+        function isPointInGeoJSON(lat, lng, geometry) {
+            if (!geometry) return false;
+
+            const point = [lng, lat]; // GeoJSON uses [lng, lat]
+
+            if (geometry.type === 'Polygon') {
+                return pointInPolygon(point, geometry.coordinates);
+            } else if (geometry.type === 'MultiPolygon') {
+                for (const polygon of geometry.coordinates) {
+                    if (pointInPolygon(point, polygon)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        function pointInPolygon(point, vs) {
+            // ray-casting algorithm based on
+            // http://www.ecse.rpi.edu/Homepages/wrf/Research/Short_Notes/pnpoly.html
+
+            const x = point[0], y = point[1];
+            let inside = false;
+
+            for (let i = 0, j = vs[0].length - 1; i < vs[0].length; j = i++) {
+                const xi = vs[0][i][0], yi = vs[0][i][1];
+                const xj = vs[0][j][0], yj = vs[0][j][1];
+
+                const intersect = ((yi > y) !== (yj > y))
+                    && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+                if (intersect) inside = !inside;
+            }
+
+            return inside;
+        }
     </script>
 </body>
 </html>

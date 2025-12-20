@@ -82,41 +82,35 @@ document.addEventListener('DOMContentLoaded', function() {
 // LOAD WARD METADATA FROM MAPPING FILE
 function loadWardMetadata() {
     console.log('📖 Loading ward metadata from mapping file...');
-    
-    fetch('data/district_localbody_mapping.json')
-        .then(r => r.json())
+    // Prefer a prepared metadata file (more accurate types)
+    fetch('data/wardMetadata.json')
+        .then(r => {
+            if (!r.ok) throw new Error('wardMetadata.json not found');
+            return r.json();
+        })
         .then(data => {
-            // Convert mapping format to wardMetadata format
-            const tempMetadata = {};
-            
-            for (const [district, bodies] of Object.entries(data)) {
-                tempMetadata[district] = {};
-                
-                bodies.forEach(body => {
-                    const type = body.Type || 'Grama Panchayat';
-                    
-                    if (!tempMetadata[district][type]) {
-                        tempMetadata[district][type] = [];
-                    }
-                    
-                    tempMetadata[district][type].push(body.LocalBody);
-                });
-                
-                // Sort each type's local bodies
-                Object.keys(tempMetadata[district]).forEach(type => {
-                    tempMetadata[district][type].sort();
-                });
-            }
-            
-            wardMetadata = tempMetadata;
-            console.log('✅ Ward metadata loaded:', Object.keys(wardMetadata).length, 'districts');
-            
-            // Initialize selectors with mapping data
+            wardMetadata = data;
+            console.log('✅ wardMetadata.json loaded:', Object.keys(wardMetadata).length, 'districts');
             setupSelectors();
         })
-        .catch(e => {
-            console.warn('⚠️ Could not load mapping file, will use GeoJSON data:', e.message);
-            // Will be populated from GeoJSON
+        .catch(() => {
+            // Fallback to older district_localbody_mapping.json (no types); group under a single type
+            fetch('data/district_localbody_mapping.json')
+                .then(r => r.json())
+                .then(data => {
+                    const temp = {};
+                    for (const [district, bodies] of Object.entries(data)) {
+                        temp[district] = {};
+                        // group all bodies under a generic type to avoid showing unrelated types
+                        temp[district]['Local Body'] = bodies.map(b => b.LocalBody).sort();
+                    }
+                    wardMetadata = temp;
+                    console.log('⚠️ Using fallback mapping, districts:', Object.keys(wardMetadata).length);
+                    setupSelectors();
+                })
+                .catch(e => {
+                    console.warn('⚠️ Could not load any mapping file, will use GeoJSON data:', e.message);
+                });
         });
 }
 

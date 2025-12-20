@@ -9,11 +9,12 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
     <!-- Leaflet Fullscreen -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet-fullscreen/2.4.0/Control.FullScreen.min.css">
-    <!-- Font Awesome -->
+    <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts: Space Grotesk for the "Spark" vibe -->
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Google Fonts: Space Grotesk -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap">
     
+<<<<<<< HEAD
     <style>
         :root {
             /* Map Screen Colors (Google Maps Light Theme) - UNCHANGED */
@@ -365,12 +366,27 @@
         });
         console.log('Early error handler installed');
     </script>
+=======
+    <link rel="stylesheet" href="assets/style.css">
+>>>>>>> b3ae1be149947821d0028e4db94511ea721c0326
 </head>
 <body>
+    <div class="app-wrapper">
+        <!-- LEFT SIDEBAR: SELECTOR PANEL -->
+        <div id="selectorScreen" class="screen active selector-side-panel">
+            <div class="selector-container">
+                <div class="selector-header">
+                    <h1>🗺️ Kerala Ward Maps</h1>
+                    <p>Delimitation Commission 2024</p>
+                </div>
 
-    <!-- 3D BACKGROUND CANVAS -->
-    <canvas id="bg-canvas"></canvas>
+                <!-- Status Bar -->
+                <div id="statusBar" class="status-bar">
+                    <span id="statusDot" class="status-dot online"></span>
+                    <span id="statusText">Checking connection...</span>
+                </div>
 
+<<<<<<< HEAD
     <!-- HOME SCREEN -->
     <div id="selectorScreen" class="screen active">
         <div class="selector-container">
@@ -395,18 +411,23 @@
             <button id="viewMapBtn" class="submit-btn" disabled>Explore Map</button>
         </div>
     </div>
+=======
+                <!-- District Selection -->
+                <div class="selector-section">
+                    <label for="districtSelect">📍 Select District</label>
+                    <select id="districtSelect" class="selector-input">
+                        <option value="">-- Choose District --</option>
+                    </select>
+                </div>
+>>>>>>> b3ae1be149947821d0028e4db94511ea721c0326
 
-    <!-- MAP SCREEN -->
-    <div id="mapScreen" class="screen">
-        <!-- SIDEBAR -->
-        <div class="sidebar" id="sidebarPanel">
-            <div class="transport-bar">
-                <button class="mode-btn active" data-mode="driving" title="Driving"><i class="fa-solid fa-car icon-svg" style="font-size:20px;"></i><span class="time">Best</span></button>
-                <button class="mode-btn" data-mode="cycling" title="Two-Wheeler"><i class="fa-solid fa-motorcycle icon-svg" style="font-size:20px;"></i><span class="time">Ride</span></button>
-                <button class="mode-btn" data-mode="walking" title="Walking"><i class="fa-solid fa-person-walking icon-svg" style="font-size:20px;"></i><span class="time">Walk</span></button>
-                <button class="mode-btn" data-mode="transit" title="Transit (Demo Only)"><i class="fa-solid fa-bus icon-svg" style="font-size:20px;"></i><span class="time">N/A</span></button>
-            </div>
+                <!-- Local Body Type Selection -->
+                <div class="selector-section">
+                    <label for="typeSelect">🏛️ Select Local Body Type</label>
+                    <div id="typeButtonsContainer" class="type-buttons-container"></div>
+                </div>
 
+<<<<<<< HEAD
             <!-- DYNAMIC INPUTS CONTAINER -->
             <div class="inputs-container">
                 <div id="stopsContainer"></div>
@@ -421,13 +442,22 @@
             
             <!-- SEARCH RESULTS -->
             <div id="searchResults" class="search-dropdown"></div>
+=======
+                <!-- Local Body Selection -->
+                <div class="selector-section">
+                    <label for="bodySelect">🏘️ Select Local Body</label>
+                    <select id="bodySelect" class="selector-input" disabled>
+                        <option value="">-- First select type --</option>
+                    </select>
+                </div>
+>>>>>>> b3ae1be149947821d0028e4db94511ea721c0326
 
-            <div class="options-bar"><button class="leave-now-btn">🕒 Leave now ▼</button></div>
-            <div class="routes-list" id="routesList"><div class="route-card"><div class="route-details" style="text-align:center; padding: 20px;">Calculate route to see details.</div></div></div>
-            
-            <div style="font-size:11px; color:#999; text-align:center; padding:8px;">Open Data Repository: sreekkuttan2809-lab</div>
-        </div>
+                <!-- View Map Button -->
+                <button id="viewMapBtn" class="submit-btn" disabled>
+                    View Map →
+                </button>
 
+<<<<<<< HEAD
         <!-- NAV UI -->
         <div class="nav-ui-layer" id="navUiLayer">
             <div id="step-banner">
@@ -442,24 +472,47 @@
                     <div class="stat-item"><span class="stat-val" id="total-dist">0 km</span><span class="stat-label">Distance</span></div>
                     <button id="exit-nav-btn" title="Exit Navigation">✕</button>
                     <button id="followToggleBtn" title="Toggle follow while navigating" style="margin-left:10px; background:#fff; border:1px solid #ddd; border-radius:8px; padding:6px 8px; cursor:pointer;">Follow: On</button>
+=======
+                <!-- Info -->
+                <div class="info-box">
+                    <p><strong>ℹ️ About:</strong> This app shows all 20,950 electoral ward boundaries from the 2024 delimitation by the Delimitation Commission, Kerala.</p>
+>>>>>>> b3ae1be149947821d0028e4db94511ea721c0326
                 </div>
             </div>
         </div>
 
-        <div id="mapContainer"></div>
+        <!-- RIGHT SIDE: MAP PANEL -->
+        <div id="mapScreen" class="screen map-side-panel">
+            <div id="mapContainer"></div>
+            
+            <!-- Map Controls -->
+            <div class="map-controls">
+                <button id="locateBtn" class="map-btn" title="Find My Location">
+                    📍 My Location
+                </button>
+                <button id="backBtn" class="map-btn" title="Back to Selector">
+                    ← Back
+                </button>
+            </div>
 
-        <div class="fab-container" id="fabContainer">
-            <button class="fab-btn primary" id="navigateBtn" title="Start Multi-Stop Navigation"><i class="fa-solid fa-location-arrow" style="font-size:24px;"></i></button>
-            <button id="floatingBackBtn" class="fab-btn" title="Back to Home"><i class="fa-solid fa-arrow-left"></i></button>
+            <!-- Ward Info Panel -->
+            <div id="wardInfoPanel" class="ward-info-panel">
+                <h3 id="wardTitle">Loading...</h3>
+                <p id="wardInfo"></p>
+            </div>
         </div>
+    </div>
 
-        <div id="errorToast" class="error-toast"><div id="errorMsg">Error</div><button style="background:none; border:none; color:#8ab4f8; margin-left:10px; cursor:pointer;" onclick="document.getElementById('errorToast').style.display='none'">CLOSE</button></div>
-        <div id="loadingOverlay" class="loading-overlay hidden"><div class="spinner-google"></div><p style="margin-top:1rem; color: var(--text-dark); font-weight:500;">Fetching Data...</p></div>
+    <!-- Loading Spinner -->
+    <div id="loadingSpinner" class="loading-spinner hidden">
+        <div class="spinner"></div>
+        <p>Loading map...</p>
     </div>
 
     <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-fullscreen/2.4.0/Control.FullScreen.min.js"></script>
+<<<<<<< HEAD
     <!-- Three.js for 3D Background -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     
@@ -1774,5 +1827,9 @@
             return inside;
         }
     </script>
+=======
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.6.2/axios.min.js"></script>
+    <script src="assets/script.js"></script>
+>>>>>>> b3ae1be149947821d0028e4db94511ea721c0326
 </body>
 </html>

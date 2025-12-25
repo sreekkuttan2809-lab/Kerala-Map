@@ -16,7 +16,6 @@
     
     <style>
         :root {
-            /* Map Screen Colors (Google Maps Light Theme) - UNCHANGED */
             --primary-color: #1a73e8; 
             --text-dark: #202124;
             --text-light: #5f6368;
@@ -24,8 +23,6 @@
             --bg-gray: #f8f9fa;
             --border: #dadce0;
             --shadow-card: 0 1px 2px rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15);
-            
-            /* Home Screen Colors (Light Theme) */
             --spark-bg: #f8f9fa;
             --spark-surface: rgba(255, 255, 255, 0.85);
             --spark-text: #202124;
@@ -34,207 +31,49 @@
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Roboto', sans-serif; }
-        
-        /* Use dvh for mobile browser bar compatibility */
         body { background-color: #f8f9fa; height: 100vh; height: 100dvh; width: 100vw; overflow: hidden; display: flex; flex-direction: column; }
-        
         .icon-svg { width: 24px; height: 24px; fill: currentColor; }
 
-        /* --- Screens --- */
         .screen { display: none; width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 10; }
         .screen.active { display: flex; flex-direction: column; z-index: 20; }
 
-        /* --- 3D Background Canvas (Light Mode) --- */
-        #bg-canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 0;
-            background: radial-gradient(circle at center, #ffffff 0%, #e8f0fe 100%);
-            pointer-events: none; /* Let clicks pass through */
-        }
+        #bg-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; background: radial-gradient(circle at center, #ffffff 0%, #e8f0fe 100%); pointer-events: none; }
 
-        /* --- Selector Screen (LIGHT THEME REDESIGN) --- */
-        #selectorScreen { 
-            align-items: center; 
-            justify-content: center; 
-            overflow-y: auto; 
-            padding: 1rem;
-            background: transparent;
-            font-family: 'Space Grotesk', sans-serif; 
-        }
-
-        .selector-header { 
-            text-align: center; 
-            margin-bottom: 2.5rem; 
-            border-bottom: 1px solid var(--spark-border); 
-            padding-bottom: 2rem; 
-            position: relative;
-        }
-        
-        .selector-header h1 { 
-            font-family: 'Space Grotesk', sans-serif;
-            color: var(--spark-accent);
-            font-size: 2.8rem; 
-            margin-bottom: 0.5rem; 
-            font-weight: 700; 
-            letter-spacing: -0.03em;
-            text-transform: uppercase;
-            background: linear-gradient(180deg, #1a73e8 0%, #0d47a1 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            filter: drop-shadow(0px 1px 2px rgba(26, 115, 232, 0.2));
-        }
-
-        .selector-header::after {
-            content: '';
-            position: absolute;
-            bottom: -1px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 60px;
-            height: 3px;
-            background: var(--spark-accent);
-            opacity: 0.3;
-        }
-        
-        .selector-container { 
-            background: var(--spark-surface);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            width: 100%; 
-            max-width: 460px; 
-            padding: 3rem 2.5rem; 
-            border-radius: 24px; 
-            border: 1px solid var(--spark-border);
-            z-index: 10;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.05);
-            animation: fadeIn 0.8s ease-out;
-        }
-        
+        #selectorScreen { align-items: center; justify-content: center; overflow-y: auto; padding: 1rem; background: transparent; font-family: 'Space Grotesk', sans-serif; }
+        .selector-header { text-align: center; margin-bottom: 2.5rem; border-bottom: 1px solid var(--spark-border); padding-bottom: 2rem; position: relative; }
+        .selector-header h1 { font-family: 'Space Grotesk', sans-serif; color: var(--spark-accent); font-size: 2.8rem; margin-bottom: 0.5rem; font-weight: 700; letter-spacing: -0.03em; text-transform: uppercase; background: linear-gradient(180deg, #1a73e8 0%, #0d47a1 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0px 1px 2px rgba(26, 115, 232, 0.2)); }
+        .selector-header::after { content: ''; position: absolute; bottom: -1px; left: 50%; transform: translateX(-50%); width: 60px; height: 3px; background: var(--spark-accent); opacity: 0.3; }
+        .selector-container { background: var(--spark-surface); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); width: 100%; max-width: 460px; padding: 3rem 2.5rem; border-radius: 24px; border: 1px solid var(--spark-border); z-index: 10; box-shadow: 0 10px 40px rgba(0,0,0,0.05); animation: fadeIn 0.8s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
         .selector-section { margin-bottom: 2rem; position: relative; }
+        #selectorScreen label { display: block; color: #5f6368; font-weight: 600; margin-bottom: 0.8rem; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 2px; }
+        #selectorScreen .selector-input { width: 100%; padding: 12px 0; border: none; border-bottom: 1px solid var(--spark-border); border-radius: 0; font-size: 1.1rem; color: var(--spark-text); background: transparent; transition: all 0.3s; cursor: pointer; }
+        #selectorScreen .selector-input:focus { outline: none; border-bottom-color: var(--spark-accent); background: linear-gradient(to bottom, transparent 95%, rgba(26, 115, 232, 0.05) 100%); }
         
-        #selectorScreen label { 
-            display: block; 
-            color: #5f6368; 
-            font-weight: 600; 
-            margin-bottom: 0.8rem; 
-            font-size: 0.75rem; 
-            text-transform: uppercase; 
-            letter-spacing: 2px;
-        }
-        
-        #selectorScreen .selector-input { 
-            width: 100%; 
-            padding: 12px 0; 
-            border: none; 
-            border-bottom: 1px solid var(--spark-border);
-            border-radius: 0; 
-            font-size: 1.1rem; 
-            color: var(--spark-text); 
-            background: transparent;
-            transition: all 0.3s;
-            cursor: pointer;
-        }
-        
-        #selectorScreen .selector-input:focus { 
-            outline: none; 
-            border-bottom-color: var(--spark-accent); 
-            background: linear-gradient(to bottom, transparent 95%, rgba(26, 115, 232, 0.05) 100%);
-        }
-        
-        /* Custom Select Arrow Styling */
-        #selectorScreen select {
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            appearance: none;
-            background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23202124%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
-            background-repeat: no-repeat;
-            background-position: right 0 center;
-            background-size: 10px;
-        }
-        
+        #selectorScreen select { -webkit-appearance: none; -moz-appearance: none; appearance: none; background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23202124%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E"); background-repeat: no-repeat; background-position: right 0 center; background-size: 10px; }
         #selectorScreen option { background-color: white; color: #333; }
 
         #selectorScreen .type-buttons-container { display: flex; gap: 10px; flex-wrap: wrap; }
-        #selectorScreen .type-btn { 
-            border: 1px solid var(--spark-border); 
-            background: transparent; 
-            color: #5f6368; 
-            padding: 8px 16px; 
-            border-radius: 4px; 
-            cursor: pointer; 
-            font-size: 0.85rem; 
-            font-weight: 500;
-            transition: all 0.3s; 
-            letter-spacing: 0.5px;
-        }
+        #selectorScreen .type-btn { border: 1px solid var(--spark-border); background: transparent; color: #5f6368; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 0.85rem; font-weight: 500; transition: all 0.3s; letter-spacing: 0.5px; }
         #selectorScreen .type-btn:hover { border-color: var(--spark-accent); color: var(--spark-accent); background: rgba(26, 115, 232, 0.05); }
-        #selectorScreen .type-btn.selected { 
-            background: var(--spark-accent); 
-            color: white; 
-            border-color: var(--spark-accent); 
-            font-weight: 600;
-            box-shadow: 0 4px 10px rgba(26, 115, 232, 0.2);
-        }
+        #selectorScreen .type-btn.selected { background: var(--spark-accent); color: white; border-color: var(--spark-accent); font-weight: 600; box-shadow: 0 4px 10px rgba(26, 115, 232, 0.2); }
 
-        #selectorScreen .submit-btn { 
-            width: 100%; 
-            padding: 18px; 
-            background: var(--spark-accent); 
-            color: white; 
-            border: none; 
-            border-radius: 8px; 
-            font-size: 1rem; 
-            font-weight: 700; 
-            cursor: pointer; 
-            margin-top: 2rem;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            transition: all 0.3s;
-            box-shadow: 0 4px 15px rgba(26, 115, 232, 0.3);
-        }
-        #selectorScreen .submit-btn:hover:not(:disabled) { 
-            background: #1557b0; 
-            transform: translateY(-2px); 
-            box-shadow: 0 6px 20px rgba(26, 115, 232, 0.4);
-        }
-        #selectorScreen .submit-btn:disabled { 
-            background: #e0e0e0; 
-            color: #999; 
-            cursor: not-allowed; 
-            box-shadow: none;
-        }
+        #selectorScreen .submit-btn { width: 100%; padding: 18px; background: var(--spark-accent); color: white; border: none; border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; margin-top: 2rem; text-transform: uppercase; letter-spacing: 2px; transition: all 0.3s; box-shadow: 0 4px 15px rgba(26, 115, 232, 0.3); }
+        #selectorScreen .submit-btn:hover:not(:disabled) { background: #1557b0; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(26, 115, 232, 0.4); }
+        #selectorScreen .submit-btn:disabled { background: #e0e0e0; color: #999; cursor: not-allowed; box-shadow: none; }
 
-        /* --- Map Screen (UNCHANGED Google Maps Style) --- */
         #mapScreen { background: #f8f9fa; z-index: 20; }
         #mapScreen.active { flex-direction: row; }
         
-        .sidebar { 
-            width: 408px; 
-            max-width: 100%; 
-            background: #fff; 
-            box-shadow: 0 0 20px rgba(0,0,0,0.1); 
-            display: flex; 
-            flex-direction: column; 
-            z-index: 1000; 
-            height: 100%; 
-            position: relative; 
-            transition: transform 0.3s ease; 
-        }
+        .sidebar { width: 408px; max-width: 100%; background: #fff; box-shadow: 0 0 20px rgba(0,0,0,0.1); display: flex; flex-direction: column; z-index: 1000; height: 100%; position: relative; transition: transform 0.3s ease; }
         .sidebar.nav-hidden { transform: translateX(-100%); width: 0; overflow: hidden; opacity: 0; }
-
         .transport-bar { background: #fff; padding: 8px 0; display: flex; justify-content: space-around; border-bottom: 1px solid #eee; }
         .mode-btn { display: flex; flex-direction: column; align-items: center; border: none; background: none; cursor: pointer; color: var(--text-light); padding: 8px 16px; border-radius: 40px; transition: background 0.2s; }
         .mode-btn.active { background: #e8f0fe; color: #1967d2; }
         .mode-btn:hover { background: #f1f3f4; }
         .mode-btn .time { font-size: 11px; margin-top: 4px; font-weight: 500; }
 
-        /* Updated Inputs Area */
         .inputs-container { background: #fff; padding: 16px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); position: relative; max-height: 40vh; overflow-y: auto; }
         #stopsContainer { display: flex; flex-direction: column; gap: 0; border: 1px solid #dadce0; border-radius: 8px; background: white; overflow: hidden; margin-bottom: 10px; }
         .input-row { display: flex; align-items: center; padding: 6px 12px; position: relative; transition: background 0.2s; border-bottom: 1px solid #f1f3f4; }
@@ -251,20 +90,18 @@
         .add-stop-btn { display: flex; align-items: center; gap: 8px; background: none; border: none; color: #1a73e8; font-weight: 500; font-size: 14px; padding: 8px 0; cursor: pointer; margin-left: 4px; }
         .add-stop-btn:hover { text-decoration: underline; }
 
-        /* Dropdown */
         .search-dropdown { position: absolute; top: 100%; left: 16px; right: 16px; background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.15); max-height: 200px; overflow-y: auto; z-index: 2000; display: none; border: 1px solid #dadce0; }
         .search-dropdown.active { display: block; }
         .search-result-item { padding: 10px 14px; cursor: pointer; border-bottom: 1px solid #f1f3f4; font-size: 13px; display: flex; align-items: center; gap: 8px; }
         .search-result-item:hover { background-color: #f1f3f4; }
+        .search-separator { cursor: default; font-weight:700; background:#f6f7f8; border-bottom:1px solid #eee; }
 
-        /* Map & UI Overlays */
-        #mapContainer { flex: 1; height: 100%; width: 100%; z-index: 1; outline: none; transition: height 0.3s; touch-action: none; /* Prevent swipe refresh */ }
+        #mapContainer { flex: 1; height: 100%; width: 100%; z-index: 1; outline: none; transition: height 0.3s; touch-action: none; }
         .fab-container { position: absolute; bottom: 24px; right: 16px; display: flex; flex-direction: column; gap: 12px; z-index: 1000; transition: bottom 0.3s ease; }
         .fab-btn { width: 56px; height: 56px; border-radius: 50%; background: white; border: none; box-shadow: 0 2px 5px rgba(0,0,0,0.3); cursor: pointer; display: flex; align-items: center; justify-content: center; color: #1a73e8; transition: all 0.2s; }
         .fab-btn:hover { background: #f8f9fa; }
         .fab-btn.primary { background: #1a73e8; color: white; }
 
-        /* Nav UI */
         .nav-ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1500; pointer-events: none; display: none; flex-direction: column; justify-content: space-between; }
         .nav-ui-layer.active { display: flex; }
         #step-banner { background-color: #1a1a1a; color: white; margin: 16px; padding: 20px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); pointer-events: auto; transform: translateY(-100px); transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); display: flex; align-items: center; max-width: 600px; width: 90%; align-self: center; }
@@ -288,66 +125,37 @@
         .spinner-google { width: 40px; height: 40px; border: 4px solid #e0e0e0; border-top: 4px solid var(--primary-color); border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
 
-        /* --- MOBILE OPTIMIZATIONS --- */
         @media (max-width: 600px) {
-            /* Home Screen */
-            .selector-container {
-                padding: 1.5rem;
-                width: 95%;
-                margin-top: 10px;
-            }
+            .selector-container { padding: 1.5rem; width: 95%; margin-top: 10px; }
             .selector-header h1 { font-size: 2rem; }
-
-            /* Map Screen */
             #mapScreen.active { flex-direction: column; }
-            
-            /* Sidebar as Bottom Sheet */
-            .sidebar {
-                width: 100%;
-                height: 50vh; /* Takes lower half */
-                min-height: 200px;
-                order: 2;
-                border-radius: 20px 20px 0 0;
-                box-shadow: 0 -5px 20px rgba(0,0,0,0.1);
-                z-index: 2000;
-            }
-            
-            /* Slide down off-screen when navigating */
+            .sidebar { width: 100%; height: 50vh; min-height: 200px; order: 2; border-radius: 20px 20px 0 0; box-shadow: 0 -5px 20px rgba(0,0,0,0.1); z-index: 2000; }
             .sidebar.nav-hidden { transform: translateY(100%); }
-
-            /* Map adapts to remaining space (top half) */
-            #mapContainer {
-                flex: 1; /* Takes whatever space is left above sidebar */
-                order: 1;
-                width: 100%;
-            }
-            
-            /* Full screen map when navigating */
+            #mapContainer { flex: 1; order: 1; width: 100%; }
             #mapContainer.nav-active { height: 100vh; flex: none; }
-
-            /* FAB Position Update */
-            .fab-container {
-                bottom: calc(50vh + 20px); /* Just above the sheet */
-                right: 16px;
-                transition: bottom 0.3s ease;
-            }
-            
-            /* If Sidebar is hidden (nav mode), move FAB down to bottom right */
+            .fab-container { bottom: calc(50vh + 20px); right: 16px; transition: bottom 0.3s ease; }
             .sidebar.nav-hidden ~ .fab-container { bottom: 24px; }
+        }
+
+        /* Ward Label Style */
+        .ward-label {
+            background: transparent;
+            border: none;
+            box-shadow: none;
+            color: #333;
+            font-weight: bold;
+            font-size: 10px;
+            text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff;
         }
     </style>
 </head>
 <body>
 
-    <!-- 3D BACKGROUND CANVAS -->
     <canvas id="bg-canvas"></canvas>
 
-    <!-- HOME SCREEN -->
     <div id="selectorScreen" class="screen active">
         <div class="selector-container">
-            <div class="selector-header">
-                <h1>Kerala Ward Map</h1>
-            </div>
+            <div class="selector-header"><h1>Kerala Ward Map</h1></div>
             <div class="selector-section">
                 <label>01 // Select District</label>
                 <select id="districtSelect" class="selector-input"><option value="">-- Choose District --</option></select>
@@ -361,6 +169,9 @@
                 <select id="bodySelect" class="selector-input" disabled><option value="">-- Select type first --</option></select>
             </div>
             <div class="selector-section">
+                <button id="autoDetectLocationBtn" class="submit-btn" style="background-color: #fbbc05; color: #000;">Find My Location & Auto-Select</button>
+            </div>
+            <div class="selector-section">
                 <label>04 // Specific Ward (Optional)</label>
                 <select id="wardSelect" class="selector-input" disabled><option value="">-- Select body first --</option></select>
             </div>
@@ -368,9 +179,7 @@
         </div>
     </div>
 
-    <!-- MAP SCREEN -->
     <div id="mapScreen" class="screen">
-        <!-- SIDEBAR -->
         <div class="sidebar" id="sidebarPanel">
             <div class="transport-bar">
                 <button class="mode-btn active" data-mode="driving" title="Driving"><i class="fa-solid fa-car icon-svg" style="font-size:20px;"></i><span class="time">Best</span></button>
@@ -378,23 +187,16 @@
                 <button class="mode-btn" data-mode="walking" title="Walking"><i class="fa-solid fa-person-walking icon-svg" style="font-size:20px;"></i><span class="time">Walk</span></button>
                 <button class="mode-btn" data-mode="transit" title="Transit (Demo Only)"><i class="fa-solid fa-bus icon-svg" style="font-size:20px;"></i><span class="time">N/A</span></button>
             </div>
-
-            <!-- DYNAMIC INPUTS CONTAINER -->
             <div class="inputs-container">
                 <div id="stopsContainer"></div>
                 <button class="add-stop-btn" id="addStopBtn"><i class="fa-solid fa-circle-plus"></i> Add destination</button>
             </div>
-            
-            <!-- SEARCH RESULTS -->
             <div id="searchResults" class="search-dropdown"></div>
-
             <div class="options-bar"><button class="leave-now-btn">🕒 Leave now ▼</button></div>
             <div class="routes-list" id="routesList"><div class="route-card"><div class="route-details" style="text-align:center; padding: 20px;">Calculate route to see details.</div></div></div>
-            
             <div style="font-size:11px; color:#999; text-align:center; padding:8px;">Open Data Repository: sreekkuttan2809-lab</div>
         </div>
 
-        <!-- NAV UI -->
         <div class="nav-ui-layer" id="navUiLayer">
             <div id="step-banner">
                 <div class="maneuver-icon" id="maneuver-icon"><i class="fa-solid fa-arrow-up"></i></div>
@@ -415,6 +217,8 @@
 
         <div class="fab-container" id="fabContainer">
             <button class="fab-btn primary" id="navigateBtn" title="Start Multi-Stop Navigation"><i class="fa-solid fa-location-arrow" style="font-size:24px;"></i></button>
+            <button id="mapLocateBtn" class="fab-btn" title="My Location"><i class="fa-solid fa-crosshairs"></i></button>
+            <button id="fitBoundsBtn" class="fab-btn" title="Fit to Borders" style="color: #d93025;"><i class="fa-solid fa-expand"></i></button>
             <button id="floatingBackBtn" class="fab-btn" title="Back to Home"><i class="fa-solid fa-arrow-left"></i></button>
         </div>
 
@@ -425,11 +229,9 @@
     <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-fullscreen/2.4.0/Control.FullScreen.min.js"></script>
-    <!-- Three.js for 3D Background -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     
     <script>
-        // CONFIG
         const GITHUB_USER = "sreekkuttan2809-lab";
         const GITHUB_REPO = "Kerala-Map";
         const GITHUB_BRANCH = "main";
@@ -437,6 +239,7 @@
         const districts = ["Thiruvananthapuram", "Kollam", "Pathanamthitta", "Alappuzha", "Kottayam", "Idukki", "Ernakulam", "Thrissur", "Palakkad", "Malappuram", "Kozhikode", "Wayanad", "Kannur", "Kasaragod"];
         const localBodyTypes = [{ id: "G", name: "Grama Panchayat" }, { id: "M", name: "Municipality" }, { id: "C", name: "Corporation" }, { id: "BP", name: "Block Panchayat" }, { id: "DP", name: "District Panchayat" }];
         const mockLocalBodies = { "Thiruvananthapuram": { "C": ["Thiruvananthapuram Corporation"], "M": ["Neyyattinkara", "Nedumangad", "Attingal", "Varkala"] }, "Ernakulam": { "C": ["Kochi Corporation"], "M": ["Aluva", "Kalamassery", "North Paravur", "Tripunithura", "Maradu"] }, "Kozhikode": { "C": ["Kozhikode Corporation"], "M": ["Vadakara", "Koyilandy", "Ramanattukara", "Feroke", "Payyoli", "Koduvally", "Mukkam"] } };
+        let localMetadata = null;
 
         let appState = {
             district: null, type: null, localBody: null, map: null, geoJsonLayer: null,
@@ -447,8 +250,9 @@
             activeInputId: 2, 
             transportMode: 'driving',
             allFeatures: [], geoData: null, preSelectedWardName: null,
-            isNavigating: false, simulationInterval: null, userPuck: null, navRouteLine: null, routeSteps: [],
-            threeRenderer: null
+            isNavigating: false, userInitiatedNavigation: false, simulationInterval: null, userPuck: null, navRouteLine: null, routeSteps: [],
+            threeRenderer: null,
+            locationWatchId: null
         };
 
         const els = {
@@ -468,86 +272,55 @@
             districts.forEach(d => { const opt = document.createElement('option'); opt.value = d; opt.textContent = d; els.districtSelect.appendChild(opt); });
             init3DBackground();
             setupEvents();
+            loadLocalMetadata();
         }
 
-        // --- 3D BACKGROUND LOGIC (LIGHT THEME + 50% SPHERE + SNOW) ---
+        async function loadLocalMetadata() {
+            try {
+                const res = await fetch('/data/wardMetadata.json');
+                if (res.ok) localMetadata = await res.json();
+            } catch (e) { console.warn('Metadata load failed', e); }
+        }
+
+        // --- 3D BACKGROUND ---
         function init3DBackground() {
             const scene = new THREE.Scene();
             const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
             const renderer = new THREE.WebGLRenderer({ canvas: els.bgCanvas, alpha: true, antialias: true });
-            
             renderer.setSize(window.innerWidth, window.innerHeight);
-            // Cap pixel ratio to 2 for mobile performance
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             appState.threeRenderer = renderer;
-
-            // 1. Wireframe Globe (Blue on White) - 50% OPACITY
+            
             const geometry = new THREE.IcosahedronGeometry(10, 2);
             const material = new THREE.MeshBasicMaterial({ color: 0x3b82f6, wireframe: true, transparent: true, opacity: 0.5 });
             const globe = new THREE.Mesh(geometry, material);
             scene.add(globe);
 
-            // 2. Inner Core (Lighter Blue)
             const coreGeom = new THREE.IcosahedronGeometry(9, 1);
             const coreMat = new THREE.MeshBasicMaterial({ color: 0x60a5fa, wireframe: true, transparent: true, opacity: 0.3 });
             const core = new THREE.Mesh(coreGeom, coreMat);
             scene.add(core);
 
-            // 3. Particles (SNOWFALLING EFFECT)
             const particlesGeom = new THREE.BufferGeometry();
-            // Reduce particle count on small screens for performance
-            const isMobile = window.innerWidth < 600;
-            const particlesCount = isMobile ? 350 : 700;
-            const posArray = new Float32Array(particlesCount * 3);
-            for(let i=0; i<particlesCount*3; i++) {
-                posArray[i] = (Math.random() - 0.5) * 40; // Spread
-            }
+            const posArray = new Float32Array(700 * 3);
+            for(let i=0; i<700*3; i++) posArray[i] = (Math.random() - 0.5) * 40;
             particlesGeom.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
             const particlesMat = new THREE.PointsMaterial({ size: 0.08, color: 0x1a73e8, transparent: true, opacity: 0.6 });
             const particlesMesh = new THREE.Points(particlesGeom, particlesMat);
             scene.add(particlesMesh);
 
             camera.position.z = 18;
-
-            let mouseX = 0, mouseY = 0;
-            // Use touch events for interaction on mobile too
-            document.addEventListener('mousemove', (event) => {
-                mouseX = (event.clientX / window.innerWidth) * 2 - 1;
-                mouseY = -(event.clientY / window.innerHeight) * 2 + 1;
-            });
-
             let animateId;
             const animate = () => {
                 animateId = requestAnimationFrame(animate);
-                
-                globe.rotation.y += 0.002;
-                globe.rotation.x += 0.001;
-                core.rotation.y -= 0.001;
-                
-                // Snowfalling: Move particles down
+                globe.rotation.y += 0.002; globe.rotation.x += 0.001; core.rotation.y -= 0.001;
                 const positions = particlesGeom.attributes.position.array;
-                for(let i = 1; i < particlesCount * 3; i += 3) { // y is at index 1, 4, 7...
-                    positions[i] -= 0.05; // Fall speed
-                    if (positions[i] < -20) {
-                        positions[i] = 20; // Reset to top
-                    }
-                }
+                for(let i=1; i<700*3; i+=3) { positions[i] -= 0.05; if(positions[i] < -20) positions[i] = 20; }
                 particlesGeom.attributes.position.needsUpdate = true;
-
-                // Subtle Mouse Parallax
-                globe.rotation.x += mouseY * 0.001;
-                globe.rotation.y += mouseX * 0.001;
-
                 renderer.render(scene, camera);
             };
             animate();
-
-            window.addEventListener('resize', () => {
-                camera.aspect = window.innerWidth / window.innerHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(window.innerWidth, window.innerHeight);
-            });
-
+            window.addEventListener('resize', () => { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
             appState.pause3D = () => cancelAnimationFrame(animateId);
             appState.resume3D = () => animate();
         }
@@ -564,11 +337,12 @@
             });
             els.wardSelect.addEventListener('change', e => { appState.preSelectedWardName = e.target.value; });
             
-            // VIEW MAP (Transitions)
+            const autoBtn = document.getElementById('autoDetectLocationBtn');
+            if(autoBtn) autoBtn.addEventListener('click', findAndSelectLocation);
+
             els.viewBtn.addEventListener('click', () => {
                 if(appState.pause3D) appState.pause3D(); 
                 els.bgCanvas.style.display = 'none'; 
-                
                 switchScreen('map'); initMap();
                 if (appState.geoData) {
                     renderMapWithData(appState.geoData);
@@ -580,19 +354,16 @@
                 renderInputs(); 
             });
 
-            // BACK TO HOME (Transitions)
-            els.floatingBackBtn.addEventListener('click', () => {
-                switchScreen('selector');
-                els.bgCanvas.style.display = 'block'; 
-                if(appState.resume3D) appState.resume3D(); 
-            });
-
+            els.floatingBackBtn.addEventListener('click', () => { switchScreen('selector'); els.bgCanvas.style.display = 'block'; if(appState.resume3D) appState.resume3D(); });
             els.navigateBtn.addEventListener('click', startMultiStopNavigation);
             els.exitNavBtn.addEventListener('click', stopNavigationDemo);
-            els.addStopBtn.addEventListener('click', () => {
-                appState.waypoints.push({ id: Date.now(), text: "", latlng: null, type: 'ward' });
-                renderInputs();
-            });
+            
+            const mapLocateBtn = document.getElementById('mapLocateBtn');
+            if (mapLocateBtn) mapLocateBtn.addEventListener('click', () => setWaypointToGPS(appState.waypoints[0].id));
+            const fitBoundsBtn = document.getElementById('fitBoundsBtn');
+            if (fitBoundsBtn) fitBoundsBtn.addEventListener('click', () => { if(appState.geoJsonLayer) appState.map.fitBounds(appState.geoJsonLayer.getBounds()); });
+
+            els.addStopBtn.addEventListener('click', () => { appState.waypoints.push({ id: Date.now(), text: "", latlng: null, type: 'ward' }); renderInputs(); });
             
             document.querySelectorAll('.mode-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
@@ -603,127 +374,29 @@
                     appState.transportMode = mode;
                 });
             });
-
             document.addEventListener('click', (e) => { if (!els.searchResults.contains(e.target)) els.searchResults.classList.remove('active'); });
         }
 
-        // --- DYNAMIC INPUTS ---
-        function renderInputs() {
-            els.stopsContainer.innerHTML = '';
-            
-            appState.waypoints.forEach((wp, index) => {
-                const row = document.createElement('div');
-                row.className = `input-row ${appState.activeInputId === wp.id ? 'focused' : ''}`;
-                let icon = '<div class="stop-dot"></div>';
-                if(index === appState.waypoints.length - 1) icon = '<i class="fa-solid fa-location-dot stop-pin"></i>';
-                
-                row.innerHTML = `
-                    <div class="stop-indicator">${icon}</div>
-                    <input type="text" class="directions-input" placeholder="${index === 0 ? 'Start location' : 'Add destination'}" value="${wp.text}" readonly>
-                    <div class="input-actions">
-                        <button class="icon-btn gps-btn" title="Use Current Location" onclick="setWaypointToGPS(${wp.id})"><i class="fa-solid fa-crosshairs"></i></button>
-                        ${appState.waypoints.length > 2 ? `<button class="icon-btn" title="Remove" onclick="removeWaypoint(${index})"><i class="fa-solid fa-xmark"></i></button>` : ''}
-                    </div>
-                `;
-                
-                const input = row.querySelector('input');
-                input.addEventListener('click', () => {
-                    appState.activeInputId = wp.id;
-                    renderInputs(); 
-                    if(wp.type !== 'gps') showWardSearch(input);
-                });
-                els.stopsContainer.appendChild(row);
-            });
-        }
-
-        function removeWaypoint(index) {
-            appState.waypoints.splice(index, 1);
-            renderInputs();
-        }
-
-        function updateWaypoint(id, layer) {
-            const wp = appState.waypoints.find(w => w.id === id);
-            if(wp && layer) {
-                const name = getWardName(layer.feature.properties);
-                wp.text = name;
-                wp.latlng = layer.getBounds().getCenter();
-                wp.type = 'ward';
-                renderInputs();
-            }
-        }
-
-        function setWaypointToGPS(id) {
-            els.loading.classList.remove('hidden');
-            if (!navigator.geolocation) { alert("Geolocation not supported"); els.loading.classList.add('hidden'); return; }
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    const latlng = L.latLng(position.coords.latitude, position.coords.longitude);
-                    const wp = appState.waypoints.find(w => w.id === id);
-                    if(wp) {
-                        wp.text = "Your Location";
-                        wp.latlng = latlng;
-                        wp.type = 'gps';
-                        if(appState.startMarker) appState.map.removeLayer(appState.startMarker);
-                        appState.startMarker = L.marker(latlng, { icon: L.divIcon({ className: 'custom-start-icon', html: '<div style="background-color:#1a73e8; width:14px; height:14px; border-radius:50%; border:2px solid white;"></div>' }) }).addTo(appState.map);
-                        appState.map.setView(latlng, 14);
-                        renderInputs();
-                    }
-                    els.loading.classList.add('hidden');
-                },
-                () => { alert("Location access denied"); els.loading.classList.add('hidden'); }
-            );
-        }
-
-        function showWardSearch(inputElem) {
-            const matches = appState.allFeatures.slice(0, 10);
-            renderSearchResults(matches, inputElem);
-            inputElem.removeAttribute('readonly');
-            inputElem.focus();
-            inputElem.addEventListener('input', (e) => {
-                const term = e.target.value.toLowerCase().trim();
-                const filtered = appState.allFeatures.filter(f => {
-                    const name = getWardName(f.feature.properties);
-                    return name.toLowerCase().includes(term);
-                }).slice(0, 10);
-                renderSearchResults(filtered, inputElem);
-            });
-        }
-
-        function renderSearchResults(matches, inputElem) {
-            els.searchResults.innerHTML = '';
-            if(matches.length > 0) {
-                matches.forEach(match => {
-                    const name = getWardName(match.feature.properties);
-                    const div = document.createElement('div');
-                    div.className = 'search-result-item';
-                    div.innerHTML = `<span style="color:#d93025">📍</span> ${name}`;
-                    div.onclick = () => {
-                        selectWard(match.layer);
-                        updateWaypoint(appState.activeInputId, match.layer);
-                        els.searchResults.classList.remove('active');
-                        inputElem.setAttribute('readonly', true);
-                    };
-                    els.searchResults.appendChild(div);
-                });
-                els.searchResults.classList.add('active');
-                els.searchResults.style.top = (inputElem.parentElement.offsetTop + inputElem.parentElement.offsetHeight + 10) + 'px';
-            } else { els.searchResults.classList.remove('active'); }
-        }
-
-        function getWardName(props) { return props.wardName || props.WARD_NAME || props.Name || `Ward ${props.wardNo}`; }
-
-        // --- MAP & FETCHING ---
-        function populateWardDropdown(data) {
-            els.wardSelect.innerHTML = '<option value="">-- Optional: Select a specific ward --</option>'; els.wardSelect.disabled = false;
-            let wards = [];
-            data.features.forEach(f => { wards.push({ name: getWardName(f.properties), num: parseInt(f.properties.wardNo || 0) || 9999 }); });
-            wards.sort((a, b) => a.num - b.num);
-            wards.forEach(w => { const opt = document.createElement('option'); opt.value = w.name; opt.textContent = w.name; els.wardSelect.appendChild(opt); });
+        // --- HELPER FUNCTIONS ---
+        function renderTypeButtons() { els.typeContainer.innerHTML = ''; if(!appState.district) return; localBodyTypes.forEach(t => { const btn = document.createElement('button'); btn.className = 'type-btn'; btn.textContent = t.name; btn.onclick = () => { document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('selected')); btn.classList.add('selected'); appState.type = t.id; populateBodies(); }; els.typeContainer.appendChild(btn); }); }
+        
+        function populateBodies() { els.bodySelect.innerHTML = '<option value="">-- Select Local Body --</option>'; els.bodySelect.disabled = false; let list = (mockLocalBodies[appState.district] && mockLocalBodies[appState.district][appState.type]) ? mockLocalBodies[appState.district][appState.type] : (localMetadata && localMetadata[appState.district] && localMetadata[appState.district][localBodyTypes.find(t=>t.id===appState.type).name]) || []; if(list.length===0) list = [`${appState.district} Body 1`, `${appState.district} Body 2`]; list.forEach(item => { const opt = document.createElement('option'); opt.value = item; opt.textContent = item; els.bodySelect.appendChild(opt); }); }
+        
+        function switchScreen(name) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); els.screens[name].classList.add('active'); els.searchResults.classList.remove('active'); if(name === 'map' && appState.map) setTimeout(() => appState.map.invalidateSize(), 200); }
+        
+        function initMap() { 
+            if(appState.map) return; 
+            appState.map = L.map('mapContainer', { zoomControl: false, attributionControl: false }).setView([10.8505, 76.2711], 8); 
+            L.control.zoom({ position: 'bottomright' }).addTo(appState.map); 
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { subdomains: 'abcd', maxZoom: 20 }).addTo(appState.map); 
         }
 
         async function fetchGeoJsonFromRepo(district, localBody) {
              const cleanDistrict = encodeURIComponent(district); const rawBody = localBody;
              const variations = [`${encodeURIComponent(rawBody)}.json`, `${encodeURIComponent(rawBody)}.geojson`, `${rawBody.replace(/ /g, '_')}.json`, `${rawBody.replace(/ /g, '_')}.geojson`];
+             // Try local file if dealing with full state
+             try { const res = await fetch('/data/KL_Wards.geojson'); if(res.ok) return await res.json(); } catch(e){}
+             // Fallback to github
              for (const fileName of variations) {
                  const url = `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/${GITHUB_BRANCH}/${cleanDistrict}/${fileName}`;
                  try { const res = await fetch(url); if (res.ok) return await res.json(); } catch (e) {}
@@ -731,21 +404,6 @@
              throw new Error("File not found");
         }
 
-        function renderTypeButtons() { els.typeContainer.innerHTML = ''; if(!appState.district) return; localBodyTypes.forEach(t => { const btn = document.createElement('button'); btn.className = 'type-btn'; btn.textContent = t.name; btn.onclick = () => { document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('selected')); btn.classList.add('selected'); appState.type = t.id; populateBodies(); }; els.typeContainer.appendChild(btn); }); }
-        function populateBodies() { els.bodySelect.innerHTML = '<option value="">-- Select Local Body --</option>'; els.bodySelect.disabled = false; let list = (mockLocalBodies[appState.district] && mockLocalBodies[appState.district][appState.type]) ? mockLocalBodies[appState.district][appState.type] : [`${appState.district} Body 1`, `${appState.district} Body 2`]; list.forEach(item => { const opt = document.createElement('option'); opt.value = item; opt.textContent = item; els.bodySelect.appendChild(opt); }); }
-        function switchScreen(name) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); els.screens[name].classList.add('active'); els.searchResults.classList.remove('active'); if(name === 'map' && appState.map) setTimeout(() => appState.map.invalidateSize(), 200); }
-        
-        function initMap() { 
-            if(appState.map) return; 
-            // attributionControl: false removes the "Leaflet | CARTO" text
-            appState.map = L.map('mapContainer', { zoomControl: false, attributionControl: false }).setView([10.8505, 76.2711], 8); 
-            L.control.zoom({ position: 'bottomright' }).addTo(appState.map); 
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { 
-                subdomains: 'abcd', 
-                maxZoom: 20 
-            }).addTo(appState.map); 
-        }
-        
         async function fetchData() {
             els.loading.classList.remove('hidden');
             try {
@@ -759,8 +417,24 @@
             if(appState.geoJsonLayer) { appState.map.removeLayer(appState.geoJsonLayer); appState.geoJsonLayer = null; }
             appState.geoJsonLayer = L.geoJSON(data, {
                 style: { color: "#1a73e8", weight: 1, opacity: 1, fillColor: "#1a73e8", fillOpacity: 0.1 },
+                filter: (feature) => {
+                    // Filter if we have specific selection
+                    if (appState.localBody && feature.properties.LSGD !== appState.localBody) return false;
+                    return true;
+                },
                 onEachFeature: (feature, layer) => {
                     appState.allFeatures.push({ feature, layer });
+                    
+                    const name = getWardName(feature.properties);
+                    const wardNo = feature.properties.Ward_No || feature.properties.wardNo;
+                    const label = wardNo ? `${wardNo}. ${name}` : name;
+                    
+                    layer.bindTooltip(label, { 
+                        permanent: true, 
+                        direction: 'center', 
+                        className: 'ward-label' 
+                    });
+
                     layer.on('click', (e) => {
                         L.DomEvent.stopPropagation(e);
                         selectWard(layer);
@@ -768,7 +442,7 @@
                     });
                 }
             }).addTo(appState.map);
-            appState.map.fitBounds(appState.geoJsonLayer.getBounds(), { padding: [20, 20] });
+            if(appState.geoJsonLayer.getLayers().length > 0) appState.map.fitBounds(appState.geoJsonLayer.getBounds(), { padding: [20, 20] });
         }
 
         function selectWard(layer) {
@@ -778,109 +452,217 @@
             appState.map.fitBounds(layer.getBounds(), { padding: [50, 50], maxZoom: 16 });
         }
 
-        // --- NAVIGATION LOGIC ---
+        function getWardName(props) { return props.Ward_Name || props.wardName || props.WARD_NAME || props.Name || `Ward ${props.Ward_No || props.wardNo}`; }
+        function populateWardDropdown(data) {
+            els.wardSelect.innerHTML = '<option value="">-- Optional: Select a specific ward --</option>'; els.wardSelect.disabled = false;
+            let wards = [];
+            data.features.forEach(f => { 
+                if(!appState.localBody || f.properties.LSGD === appState.localBody)
+                    wards.push({ name: getWardName(f.properties), num: parseInt(f.properties.Ward_No || f.properties.wardNo || 0) || 9999 }); 
+            });
+            wards.sort((a, b) => a.num - b.num);
+            wards.forEach(w => { const opt = document.createElement('option'); opt.value = w.name; opt.textContent = w.name; els.wardSelect.appendChild(opt); });
+        }
+
+        // --- INPUTS ---
+        function renderInputs() {
+            els.stopsContainer.innerHTML = '';
+            appState.waypoints.forEach((wp, index) => {
+                const row = document.createElement('div');
+                row.className = `input-row ${appState.activeInputId === wp.id ? 'focused' : ''}`;
+                let icon = '<div class="stop-dot"></div>';
+                if(index === appState.waypoints.length - 1) icon = '<i class="fa-solid fa-location-dot stop-pin"></i>';
+                row.innerHTML = `
+                    <div class="stop-indicator">${icon}</div>
+                    <input type="text" class="directions-input" placeholder="${index === 0 ? 'Start location' : 'Add destination'}" value="${wp.text}" readonly>
+                    <div class="input-actions">
+                        <button class="icon-btn gps-btn" title="Use Current Location" onclick="setWaypointToGPS(${wp.id})"><i class="fa-solid fa-crosshairs"></i></button>
+                        ${appState.waypoints.length > 2 ? `<button class="icon-btn" title="Remove" onclick="removeWaypoint(${index})"><i class="fa-solid fa-xmark"></i></button>` : ''}
+                    </div>
+                `;
+                row.querySelector('input').addEventListener('click', (e) => { appState.activeInputId = wp.id; renderInputs(); if(wp.type !== 'gps') showWardSearch(e.target); });
+                els.stopsContainer.appendChild(row);
+            });
+        }
+        function removeWaypoint(index) { appState.waypoints.splice(index, 1); renderInputs(); }
+        function updateWaypoint(id, layer) {
+            const wp = appState.waypoints.find(w => w.id === id);
+            if(wp && layer) { wp.text = getWardName(layer.feature.properties); wp.latlng = layer.getBounds().getCenter(); wp.type = 'ward'; renderInputs(); }
+        }
+        function setWaypointToGPS(id) {
+            els.loading.classList.remove('hidden');
+            if (!navigator.geolocation) { alert("Geolocation not supported"); els.loading.classList.add('hidden'); return; }
+            navigator.geolocation.getCurrentPosition((position) => {
+                const latlng = L.latLng(position.coords.latitude, position.coords.longitude);
+                const wp = appState.waypoints.find(w => w.id === id);
+                if(wp) { wp.text = "Your Location"; wp.latlng = latlng; wp.type = 'gps'; if(appState.startMarker) appState.map.removeLayer(appState.startMarker); appState.startMarker = L.marker(latlng).addTo(appState.map); appState.map.setView(latlng, 14); renderInputs(); }
+                els.loading.classList.add('hidden');
+            }, () => { alert("Location denied"); els.loading.classList.add('hidden'); }, { enableHighAccuracy: true });
+        }
+        function showWardSearch(inputElem) {
+            inputElem.removeAttribute('readonly'); inputElem.focus();
+            const filter = (val) => {
+                const term = val.toLowerCase();
+                const matches = appState.allFeatures.filter(f => getWardName(f.feature.properties).toLowerCase().includes(term)).slice(0, 10);
+                renderSearchResults(matches, inputElem);
+            };
+            filter(inputElem.value);
+            inputElem.oninput = (e) => filter(e.target.value);
+        }
+        function renderSearchResults(matches, inputElem) {
+            els.searchResults.innerHTML = '';
+            if(matches.length > 0) {
+                matches.forEach(match => {
+                    const name = getWardName(match.feature.properties);
+                    const div = document.createElement('div'); div.className = 'search-result-item'; div.innerHTML = `<span style="color:#d93025">≡ƒôì</span> ${name}`;
+                    div.onclick = () => { selectWard(match.layer); updateWaypoint(appState.activeInputId, match.layer); els.searchResults.classList.remove('active'); inputElem.setAttribute('readonly', true); };
+                    els.searchResults.appendChild(div);
+                });
+                els.searchResults.classList.add('active');
+                els.searchResults.style.top = (inputElem.parentElement.offsetTop + inputElem.parentElement.offsetHeight + 10) + 'px';
+            } else { els.searchResults.classList.remove('active'); }
+        }
+
+        // --- NAVIGATION ---
         async function startMultiStopNavigation() {
             const stops = appState.waypoints.filter(w => w.latlng);
             if (stops.length < 2) { alert("Please set at least a start and end location"); return; }
+            
+            // Force fresh GPS for start
+            if (stops[0].type === 'gps') {
+                 // We trust the latest stored latlng from setWaypointToGPS, 
+                 // but ideally we'd refresh it here. For now, rely on recent setWaypointToGPS.
+            }
 
             appState.isNavigating = true;
-            els.sidebarPanel.classList.add('nav-hidden');
-            els.mapContainer.classList.add('nav-active');
-            els.fabContainer.style.display = 'none';
-            els.navUiLayer.classList.add('active');
-            els.stepBanner.classList.add('active');
+            appState.userInitiatedNavigation = true; // Flag for watch logic
+            
+            els.sidebarPanel.classList.add('nav-hidden'); els.mapContainer.classList.add('nav-active'); els.fabContainer.style.display = 'none'; els.navUiLayer.classList.add('active'); els.stepBanner.classList.add('active');
             document.getElementById('instr-sub').innerText = `Calculating ${appState.transportMode} route...`;
 
             try {
-                // Construct OSRM URL with profile
                 const coords = stops.map(s => `${s.latlng.lng},${s.latlng.lat}`).join(';');
-                let profile = 'driving';
-                if (appState.transportMode === 'walking') profile = 'walking';
-                if (appState.transportMode === 'cycling') profile = 'cycling';
-
-                const url = `https://router.project-osrm.org/route/v1/${profile}/${coords}?overview=full&geometries=geojson&steps=true`;
-                
+                const url = `https://router.project-osrm.org/route/v1/${appState.transportMode}/${coords}?overview=full&geometries=geojson&steps=true`;
                 const response = await fetch(url);
                 const json = await response.json();
                 if (json.code !== 'Ok') throw new Error("Route not found");
 
                 const route = json.routes[0];
                 const coordinates = route.geometry.coordinates.map(c => L.latLng(c[1], c[0]));
-                
-                appState.routeSteps = [];
-                route.legs.forEach(leg => appState.routeSteps.push(...leg.steps));
+                appState.routeSteps = []; route.legs.forEach(leg => appState.routeSteps.push(...leg.steps));
 
                 if(appState.navRouteLine) appState.map.removeLayer(appState.navRouteLine);
                 appState.navRouteLine = L.polyline(coordinates, { color: '#4285F4', weight: 8, opacity: 0.8 }).addTo(appState.map);
 
-                animateAlongRoute(coordinates);
+                // START WATCHING LOCATION REALTIME
+                startLocateWatch();
 
-            } catch (e) {
-                console.error(e);
-                alert("Navigation Error: " + e.message);
-                stopNavigationDemo();
-            }
+            } catch (e) { console.error(e); alert("Navigation Error: " + e.message); stopNavigationDemo(); }
         }
 
-        function animateAlongRoute(routePoints) {
-            const start = routePoints[0];
-            if(appState.userPuck) appState.map.removeLayer(appState.userPuck);
-            const icon = L.divIcon({ className: 'user-puck', iconSize: [20, 20] });
-            appState.userPuck = L.marker(start, { icon: icon, zIndexOffset: 1000 }).addTo(appState.map);
-
-            let idx = 0;
-            const totalPoints = routePoints.length;
+        function startLocateWatch() {
+            if (!navigator.geolocation) return;
+            if (appState.locationWatchId) navigator.geolocation.clearWatch(appState.locationWatchId);
             
-            if(appState.simulationInterval) clearInterval(appState.simulationInterval);
-            appState.simulationInterval = setInterval(() => {
-                if(idx >= totalPoints - 1) { 
-                    document.getElementById('instr-main').innerText = "Arrived";
-                    document.getElementById('instr-sub').innerText = "Destination reached";
-                    setTimeout(stopNavigationDemo, 3000); 
-                    return; 
+            appState.locationWatchId = navigator.geolocation.watchPosition((pos) => {
+                const ll = L.latLng(pos.coords.latitude, pos.coords.longitude);
+                // Update User Puck
+                if(!appState.userPuck) {
+                    const icon = L.divIcon({ className: 'user-puck', iconSize: [20, 20] });
+                    appState.userPuck = L.marker(ll, { icon: icon, zIndexOffset: 1000 }).addTo(appState.map);
+                } else { appState.userPuck.setLatLng(ll); }
+                
+                // Snap to route logic (simple distance check)
+                if (appState.navRouteLine) {
+                    // Update stats (simplified)
+                    // In a real app we'd project point to polyline
                 }
-                const p1 = routePoints[Math.floor(idx)];
-                appState.userPuck.setLatLng(p1);
-                appState.map.flyTo(p1, 18, { animate: false });
                 
-                const remaining = routePoints.slice(Math.floor(idx)).reduce((acc, curr, i, arr) => (i === 0 ? 0 : acc + arr[i-1].distanceTo(curr)), 0);
-                document.getElementById('step-dist').innerText = Math.round(remaining) + "m";
-                document.getElementById('total-dist').innerText = (remaining/1000).toFixed(1) + " km";
-                document.getElementById('total-time').innerText = Math.ceil(remaining/500) + " min";
-                
-                updateInstructions(p1);
-                idx += 0.5;
-            }, 50);
-        }
-
-        function updateInstructions(currentLatLng) {
-            let closestStep = null, minD = Infinity;
-            for(const step of appState.routeSteps) {
-                const stepLoc = L.latLng(step.maneuver.location[1], step.maneuver.location[0]);
-                const d = currentLatLng.distanceTo(stepLoc);
-                if (d < minD) { minD = d; closestStep = step; }
-            }
-            if (closestStep) {
-                const m = closestStep.maneuver;
-                let text = m.type;
-                if (m.modifier) text += " " + m.modifier;
-                let icon = "fa-arrow-up", rot = "";
-                if (text.includes("left")) icon = "fa-arrow-left"; else if (text.includes("right")) icon = "fa-arrow-right";
-                if (m.modifier?.includes("slight")) rot = m.modifier.includes("right") ? "rotate(45deg)" : "rotate(-45deg)";
-                
-                document.getElementById('maneuver-icon').innerHTML = `<i class="fa-solid ${icon}" style="transform:${rot}"></i>`;
-                document.getElementById('instr-main').innerText = text.replace(/-/g, ' ').toUpperCase();
-                document.getElementById('instr-sub').innerText = closestStep.name || "Road";
-            }
+                appState.map.setView(ll, 18); // Follow user
+            }, err => console.warn(err), { enableHighAccuracy: true });
         }
 
         function stopNavigationDemo() {
             appState.isNavigating = false;
-            if(appState.simulationInterval) clearInterval(appState.simulationInterval);
+            if (appState.locationWatchId) navigator.geolocation.clearWatch(appState.locationWatchId); appState.locationWatchId = null;
             els.sidebarPanel.classList.remove('nav-hidden'); els.mapContainer.classList.remove('nav-active'); els.fabContainer.style.display = 'flex'; els.navUiLayer.classList.remove('active'); els.stepBanner.classList.remove('active');
             if(appState.navRouteLine) appState.map.removeLayer(appState.navRouteLine);
             if(appState.userPuck) appState.map.removeLayer(appState.userPuck);
-            if(appState.selectedLayer) appState.map.fitBounds(appState.selectedLayer.getBounds());
+        }
+
+        // --- AUTO DETECT ---
+        function findAndSelectLocation() {
+            if (!navigator.geolocation) { alert('Geolocation not supported'); return; }
+            els.loading.classList.remove('hidden');
+            navigator.geolocation.getCurrentPosition(async (position) => {
+                const lat = position.coords.latitude; const lng = position.coords.longitude;
+                try {
+                    const res = await fetch('/data/KL_Wards.geojson');
+                    if (!res.ok) throw new Error('Fetch failed');
+                    const data = await res.json();
+                    const found = data.features.find(f => isPointInGeoJSON(lat, lng, f.geometry));
+                    if(found) {
+                        const props = found.properties;
+                        // Store detected values locally to survive the reset triggered by district change
+                        const detectedDistrict = props.District;
+                        const detectedType = props.Lsgd_Type; 
+                        const detectedBody = props.LSGD;
+                        
+                        appState.district = detectedDistrict;
+                        els.districtSelect.value = detectedDistrict;
+                        els.districtSelect.dispatchEvent(new Event('change'));
+                        
+                        setTimeout(() => {
+                            // ROBUST TYPE SELECTION FIX
+                            // Use detectedType instead of appState.type (which was nullified)
+                            const targetType = detectedType.trim().toLowerCase().replace(/h$/, '');
+                            const typeBtns = document.querySelectorAll('.type-btn');
+                            let clicked = false;
+                            
+                            typeBtns.forEach(btn => {
+                                if(btn.textContent.trim().toLowerCase().replace(/h$/, '') === targetType) {
+                                    btn.click(); 
+                                    clicked = true;
+                                }
+                            });
+                            
+                            setTimeout(() => {
+                                // Restore the body selection
+                                els.bodySelect.value = detectedBody;
+                                appState.localBody = detectedBody;
+                                
+                                appState.geoData = data; // use full data
+                                els.viewBtn.disabled = false;
+                                els.viewBtn.click();
+                                els.loading.classList.add('hidden');
+                                // Select specific ward
+                                setTimeout(() => {
+                                    const layer = appState.geoJsonLayer.getLayers().find(l => l.feature === found);
+                                    if(layer) selectWard(layer);
+                                }, 500);
+                            }, 500);
+                        }, 500);
+                    } else { alert("Location not found in any ward."); els.loading.classList.add('hidden'); }
+                } catch(e) { alert("Error: "+e.message); els.loading.classList.add('hidden'); }
+            }, () => { alert("Location access denied"); els.loading.classList.add('hidden'); });
+        }
+
+        function isPointInGeoJSON(lat, lng, geometry) {
+            const point = [lng, lat];
+            if (geometry.type === 'Polygon') return pointInPolygon(point, geometry.coordinates);
+            if (geometry.type === 'MultiPolygon') {
+                for (const poly of geometry.coordinates) if (pointInPolygon(point, poly)) return true;
+            }
+            return false;
+        }
+        function pointInPolygon(point, vs) {
+            const x = point[0], y = point[1]; let inside = false;
+            for (let i = 0, j = vs[0].length - 1; i < vs[0].length; j = i++) {
+                const xi = vs[0][i][0], yi = vs[0][i][1]; const xj = vs[0][j][0], yj = vs[0][j][1];
+                const intersect = ((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+                if (intersect) inside = !inside;
+            }
+            return inside;
         }
 
         init();

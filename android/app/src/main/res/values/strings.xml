@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">KeralaMap</string>
+    <string name="title_activity_main">KeralaMap</string>
+    <string name="package_name">com.keralamap.app</string>
+    <string name="custom_url_scheme">com.keralamap.app</string>
+</resources>

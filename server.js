@@ -39,11 +39,7 @@ app.get('/geocode', async (req, res) => {
                 'User-Agent': `KeralaWardMaps/1.0 (${email})`,
                 'Accept-Language': req.headers['accept-language'] || 'en'
             },
-<<<<<<< HEAD
             timeout: 15000
-=======
-            timeout: 8000
->>>>>>> b3ae1be149947821d0028e4db94511ea721c0326
         });
         if (!r.ok) return res.status(502).json({ error: 'geocode upstream error' });
         const data = await r.json();

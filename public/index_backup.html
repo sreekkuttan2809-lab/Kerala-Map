@@ -1,0 +1,1607 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kerala Ward Map - Multi-Stop Navigation</title>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+    <!-- Leaflet Fullscreen -->
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/leaflet-fullscreen/2.4.0/Control.FullScreen.min.css">
+    <!-- Font Awesome Icons (Keep for other parts if needed, but sidebar uses Material) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Roboto (Standard Map Font) -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- Google Material Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <!-- Google Fonts: Space Grotesk (Only for Intro Screen) -->
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap">
+
+    <style>
+        :root {
+            /* Map Screen Colors (Google Maps Light Theme) - UNCHANGED */
+            --primary-color: #1a73e8;
+            --text-dark: #202124;
+            --text-light: #5f6368;
+            --surface: #ffffff;
+            --bg-gray: #f8f9fa;
+            --border: #dadce0;
+            --shadow-card: 0 1px 2px rgba(60, 64, 67, 0.3), 0 1px 3px 1px rgba(60, 64, 67, 0.15);
+
+            /* Home Screen Colors (Light Theme) */
+            --spark-bg: #f8f9fa;
+            --spark-surface: rgba(255, 255, 255, 0.85);
+            --spark-text: #202124;
+            --spark-accent: #1a73e8;
+            --spark-border: rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Roboto', sans-serif;
+        }
+
+        /* Use dvh for mobile browser bar compatibility */
+        body {
+            background-color: #f8f9fa;
+            height: 100vh;
+            height: 100dvh;
+            width: 100vw;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .icon-svg {
+            width: 24px;
+            height: 24px;
+            fill: currentColor;
+        }
+
+        /* --- Screens --- */
+        .screen {
+            display: none;
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 10;
+        }
+
+        .screen.active {
+            display: flex;
+            flex-direction: column;
+            z-index: 20;
+        }
+
+        /* --- 3D Background Canvas (Light Mode) --- */
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            background: radial-gradient(circle at center, #ffffff 0%, #e8f0fe 100%);
+            pointer-events: none;
+            /* Let clicks pass through */
+        }
+
+        /* --- Selector Screen (LIGHT THEME REDESIGN) --- */
+        #selectorScreen {
+            align-items: center;
+            justify-content: center;
+            overflow-y: auto;
+            padding: 1rem;
+            background: transparent;
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        .selector-header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+            border-bottom: 1px solid var(--spark-border);
+            padding-bottom: 2rem;
+            position: relative;
+        }
+
+        .selector-header h1 {
+            font-family: 'Space Grotesk', sans-serif;
+            color: var(--spark-accent);
+            font-size: 2.8rem;
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            text-transform: uppercase;
+            background: linear-gradient(180deg, #1a73e8 0%, #174ea6 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0px 1px 2px rgba(26, 115, 232, 0.2));
+        }
+
+        .selector-header::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 3px;
+            background: var(--spark-accent);
+            opacity: 0.3;
+        }
+
+        .selector-container {
+            background: var(--spark-surface);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            width: 100%;
+            max-width: 460px;
+            padding: 3rem 2.5rem;
+            border-radius: 24px;
+            border: 1px solid var(--spark-border);
+            z-index: 10;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.05);
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .selector-section {
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
+        #selectorScreen label {
+            display: block;
+            color: #5f6368;
+            font-weight: 600;
+            margin-bottom: 0.8rem;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        #selectorScreen .selector-input {
+            width: 100%;
+            padding: 12px 0;
+            border: none;
+            border-bottom: 1px solid var(--spark-border);
+            border-radius: 0;
+            font-size: 1.1rem;
+            color: var(--spark-text);
+            background: transparent;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        #selectorScreen .selector-input:focus {
+            outline: none;
+            border-bottom-color: var(--spark-accent);
+            background: linear-gradient(to bottom, transparent 95%, rgba(26, 115, 232, 0.05) 100%);
+        }
+
+        /* Custom Select Arrow Styling */
+        #selectorScreen select {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-image:
+                url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23202124%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0 center;
+            background-size: 10px;
+        }
+
+        #selectorScreen option {
+            background-color: white;
+            color: #333;
+        }
+
+        #selectorScreen .type-buttons-container {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        #selectorScreen .type-btn {
+            border: 1px solid var(--spark-border);
+            background: transparent;
+            color: #5f6368;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.3s;
+            letter-spacing: 0.5px;
+        }
+
+        #selectorScreen .type-btn:hover {
+            border-color: var(--spark-accent);
+            color: var(--spark-accent);
+            background:
+                rgba(26, 115, 232, 0.05);
+        }
+
+        #selectorScreen .type-btn.selected {
+            background: var(--spark-accent);
+            color: white;
+            border-color: var(--spark-accent);
+            font-weight: 600;
+            box-shadow: 0 4px 10px rgba(26, 115, 232, 0.2);
+        }
+
+        #selectorScreen .submit-btn {
+            width: 100%;
+            padding: 18px;
+            background: var(--spark-accent);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 2rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(26, 115, 232, 0.3);
+        }
+
+        #selectorScreen .submit-btn:hover:not(:disabled) {
+            background: #1557b0;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(26, 115, 232, 0.4);
+        }
+
+        #selectorScreen .submit-btn:disabled {
+            background: #e0e0e0;
+            color: #999;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        /* --- Map Screen (Google Maps Style Full Overlay) --- */
+        #mapScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 100;
+            background: #fff;
+            display: none;
+        }
+
+        #mapScreen.active {
+            display: block;
+        }
+
+        #mapContainer {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        .left-sidebar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 400px;
+            max-width: 100%;
+            background: #fff;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            z-index: 1000;
+            height: 100%;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+
+        .sidebar.nav-hidden {
+            transform: translateX(-100%);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .transport-bar {
+            background: #fff;
+            padding: 8px 0;
+            display: flex;
+            justify-content: space-around;
+            border-bottom:
+                1px solid #eee;
+        }
+
+        .mode-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border: none;
+            background: none;
+            cursor:
+                pointer;
+            color: var(--text-light);
+            padding: 8px 16px;
+            border-radius: 40px;
+            transition: background 0.2s;
+        }
+
+        .mode-btn.active {
+            background: #e8f0fe;
+            color: #1967d2;
+        }
+
+        .mode-btn:hover {
+            background: #f1f3f4;
+        }
+
+        .mode-btn .time {
+            font-size: 11px;
+            margin-top: 4px;
+            font-weight: 500;
+        }
+
+        /* Updated Inputs Area */
+        .inputs-container {
+            background: #fff;
+            padding: 16px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            position: relative;
+            max-height: 40vh;
+            overflow-y: auto;
+        }
+
+        #stopsContainer {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            border: 1px solid #dadce0;
+            border-radius: 8px;
+            background: white;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .input-row {
+            display: flex;
+            align-items: center;
+            padding: 6px 12px;
+            position: relative;
+            transition: background 0.2s;
+            border-bottom: 1px solid #f1f3f4;
+        }
+
+        .input-row:last-child {
+            border-bottom: none;
+        }
+
+        .input-row.focused {
+            background: #f1f3f4;
+        }
+
+        .directions-input {
+            flex: 1;
+            border: none;
+            padding: 10px 8px;
+            font-size: 14px;
+            outline: none;
+            color: #202124;
+            background: transparent;
+            text-overflow: ellipsis;
+        }
+
+        .stop-indicator {
+            width: 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-right: 8px;
+            color: #5f6368;
+        }
+
+        .stop-dot {
+            width: 8px;
+            height: 8px;
+            border: 2px solid #5f6368;
+            border-radius: 50%;
+        }
+
+        .stop-pin {
+            color: #d93025;
+            font-size: 14px;
+        }
+
+        .input-actions {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+        }
+
+        .icon-btn {
+            border: none;
+            background: none;
+            color: #5f6368;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .icon-btn:hover {
+            background: #e0e0e0;
+            color: #202124;
+        }
+
+        .gps-btn {
+            color: #1a73e8;
+        }
+
+        .add-stop-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: none;
+            border: none;
+            color: #1a73e8;
+            font-weight: 500;
+            font-size: 14px;
+            padding: 8px 0;
+            cursor: pointer;
+            margin-left: 4px;
+        }
+
+        .add-stop-btn:hover {
+            text-decoration: underline;
+        }
+
+        /* Dropdown */
+        .search-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 16px;
+            right: 16px;
+            background: white;
+            border-radius:
+                8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 2000;
+            display: none;
+            border: 1px solid #dadce0;
+        }
+
+        .search-dropdown.active {
+            display: block;
+        }
+
+        .search-result-item {
+            padding: 10px 14px;
+            cursor: pointer;
+            border-bottom: 1px solid #f1f3f4;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .search-result-item:hover {
+            background-color: #f1f3f4;
+        }
+
+        .search-result-item.active {
+            background-color: #e8f0fe;
+        }
+
+        .search-separator {
+            cursor: default;
+            font-weight: 700;
+            background: #f6f7f8;
+            border-bottom: 1px solid #eee;
+        }
+
+        /* Map & UI Overlays */
+        #mapContainer {
+            flex: 1;
+            height: 100%;
+            width: 100%;
+            z-index: 1;
+            outline: none;
+            transition: height 0.3s;
+            touch-action: none;
+            /* Prevent swipe refresh */
+        }
+
+        .fab-container {
+            position: absolute;
+            bottom: 24px;
+            right: 16px;
+            display: flex;
+            flex-direction: column;
+            gap:
+                12px;
+            z-index: 1000;
+            transition: bottom 0.3s ease;
+        }
+
+        .fab-btn {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: white;
+            border: none;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #1a73e8;
+            transition: all 0.2s;
+        }
+
+        .fab-btn:hover {
+            background: #f8f9fa;
+        }
+
+        .fab-btn.primary {
+            background: #1a73e8;
+            color: white;
+        }
+
+        /* Locate button (floating) */
+        .locate-btn {
+            position: absolute;
+            right: 16px;
+            bottom: 100px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: #1a73e8;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 6px 16px rgba(26, 115, 232, 0.25);
+            border: none;
+            z-index: 1200;
+            cursor: pointer;
+        }
+
+        .locate-btn .fa-location-arrow {
+            transform: rotate(45deg);
+        }
+
+        /* Nav UI */
+        .nav-ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1500;
+            pointer-events:
+                none;
+            display: none;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .nav-ui-layer.active {
+            display: flex;
+        }
+
+        /* Sidebar Header Row with Back Button */
+        .sidebar-header-row {
+            padding: 8px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            right: 8px;
+            z-index: 2000;
+            pointer-events: none;
+            /* Let map clicks pass through background */
+        }
+
+        .search-box-mock {
+            flex: 1;
+            height: 48px;
+            background: #fff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), 0 -1px 0px rgba(0, 0, 0, 0.02);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            padding: 0 8px;
+            pointer-events: auto;
+            /* Re-enable for search box */
+        }
+
+        /* Mock Search Box - Floating Card Style */
+        .search-box-mock {
+            flex: 1;
+            height: 48px;
+            background: #fff;
+            box-shadow: 0 1px 3px rgba(60, 64, 67, 0.3), 0 4px 8px 3px rgba(60, 64, 67, 0.15);
+            /* More accurate G-Maps shadow */
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            padding: 0 8px;
+            color: #202124;
+            font-size: 16px;
+            cursor: pointer;
+            transition: box-shadow 0.2s;
+        }
+
+        .search-box-mock:focus-within {
+            box-shadow: 0 1px 2px rgba(60, 64, 67, 0.3), 0 1px 3px 1px rgba(60, 64, 67, 0.15);
+        }
+
+        .search-box-mock input {
+            flex: 1;
+            border: none;
+            outline: none;
+            height: 100%;
+            font-size: 16px;
+            background: transparent;
+            padding: 0 12px;
+            color: #202124;
+            font-family: 'Roboto', sans-serif;
+        }
+
+        .search-box-mock .divider {
+            width: 1px;
+            height: 28px;
+            background: #e8eaed;
+            margin: 0 4px;
+        }
+
+        .search-box-mock:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .search-icon {
+            color: #1a73e8;
+            font-size: 20px;
+        }
+
+        .back-arrow-btn {
+            background: transparent;
+            border: none;
+            width: 40px;
+            height: 40px;
+            /* Fixed touch target */
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: #5f6368;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .back-arrow-btn:hover {
+            background: #f0f0f0;
+            color: #202124;
+        }
+
+        .ward-details-content {
+            padding: 12px 24px 24px 24px;
+            /* More padding on sides */
+            overflow-y: auto;
+        }
+
+        /* Typography */
+        #wardTitle {
+            font-family: 'Roboto', sans-serif;
+            font-size: 22px;
+            font-weight: 500;
+            /* Bolder for better visibility */
+            color: #202124;
+            margin-bottom: 2px;
+        }
+
+        #wardInfo {
+            font-size: 14px;
+            color: #70757a;
+            /* Grey subtext */
+            margin-top: 0;
+            margin-bottom: 24px;
+            /* Space before buttons */
+        }
+
+        /* Action Pills - "Directions", "Share" */
+        .action-pill {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #e8eaed;
+            /* Light grey border */
+            border-radius: 20px;
+            /* High radius for pill shape */
+            padding: 8px 16px;
+            background: white;
+            color: #1a73e8;
+            /* Google Blue */
+            font-weight: 500;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+
+        .action-pill:hover {
+            background: #f8f9fa;
+            border-color: #1a73e8;
+        }
+
+        .action-pill .material-icons {
+            font-size: 18px;
+            color: #1a73e8;
+        }
+
+        /* Map Controls Right (Bottom Right cluster) */
+        .map-controls-right {
+            position: absolute;
+            bottom: 30px;
+            /* Lifted up slightly */
+            right: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 1000;
+        }
+
+        /* Map Controls (Top Left) */
+        .map-controls {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+            display: flex;
+            gap: 10px;
+        }
+
+        .map-btn {
+            background: white;
+            border: 1px solid #ccc;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .map-btn:hover {
+            background: #f1f1f1;
+        }
+
+        /* Ward Info Panel (Bottom Center) */
+        .ward-info-panel {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            min-width: 300px;
+            text-align: center;
+        }
+
+        .ward-info-panel h3 {
+            margin: 0 0 5px 0;
+            color: #1a73e8;
+        }
+
+        #step-banner {
+            background-color: #1a1a1a;
+            color: white;
+            margin: 16px;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            pointer-events: auto;
+            transform: translateY(-100px);
+            transition:
+                transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            display: flex;
+            align-items: center;
+            max-width: 600px;
+            width:
+                90%;
+            align-self: center;
+        }
+
+        #step-banner.active {
+            transform: translateY(0);
+        }
+
+        .maneuver-icon {
+            font-size: 32px;
+            margin-right: 20px;
+            color: #ffffff;
+            width: 40px;
+            text-align: center;
+        }
+
+        .instruction-text {
+            flex: 1;
+        }
+
+        .instruction-main {
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .instruction-sub {
+            font-size: 14px;
+            color: #aaa;
+            margin-top: 4px;
+        }
+
+        .distance-badge {
+            font-size: 24px;
+            font-weight: 300;
+            margin-left: 16px;
+            white-space: nowrap;
+        }
+
+        .nav-bottom-container {
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            pointer-events: auto;
+            background:
+                linear-gradient(to top, rgba(0, 0, 0, 0.6) 0%, transparent 100%);
+            padding-bottom: 40px;
+            width: 100%;
+        }
+
+        #stats-panel {
+            background: white;
+            padding: 15px 25px;
+            border-radius: 50px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 60px;
+        }
+
+        .stat-val {
+            font-weight: 700;
+            font-size: 16px;
+            color: #333;
+        }
+
+        .stat-label {
+            font-size: 10px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        #exit-nav-btn {
+            background: #d93025;
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-left: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .user-puck {
+            background-color: #2563eb;
+            border: 3px solid white;
+            border-radius: 50%;
+            box-shadow: 0 0 0 10px rgba(37, 99, 235, 0.2);
+            width: 20px;
+            height: 20px;
+        }
+
+        .error-toast {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: #323232;
+            color: white;
+            padding: 16px 24px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            z-index: 2000;
+            display: none;
+        }
+
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background:
+                rgba(255, 255, 255, 0.8);
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .loading-overlay.hidden {
+            display: none;
+        }
+
+        .spinner-google {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e0e0e0;
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* --- MOBILE OPTIMIZATIONS --- */
+        @media (max-width: 600px) {
+
+            /* Home Screen */
+            .selector-container {
+                padding: 1.5rem;
+                width: 95%;
+                margin-top: 10px;
+            }
+
+            .selector-header h1 {
+                font-size: 2rem;
+            }
+
+            /* Map Screen */
+            #mapScreen.active {
+                flex-direction: column;
+            }
+
+            /* Sidebar as Bottom Sheet */
+            .sidebar {
+                width: 100%;
+                height: 50vh;
+                /* Takes lower half */
+                min-height: 200px;
+                order: 2;
+                border-radius: 20px 20px 0 0;
+                box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.1);
+                z-index: 2000;
+            }
+
+            /* Slide down off-screen when navigating */
+            .sidebar.nav-hidden {
+                transform: translateY(100%);
+            }
+
+            /* Map adapts to remaining space (top half) */
+            #mapContainer {
+                flex: 1;
+                /* Takes whatever space is left above sidebar */
+                order: 1;
+                width: 100%;
+            }
+
+            /* Full screen map always */
+            #mapContainer {
+                height: 100%;
+                width: 100%;
+            }
+
+            /* FAB Position Update */
+            .fab-container {
+                bottom: calc(50vh + 20px);
+                /* Just above the sheet */
+                right: 16px;
+                transition: bottom 0.3s ease;
+            }
+
+            /* If Sidebar is hidden (nav mode), move FAB down to bottom right */
+            .sidebar.nav-hidden~.fab-container {
+                bottom: 24px;
+            }
+        }
+
+        /* DIRECTIONS SIDEBAR STYLES */
+        .dir-input-box {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            padding: 0 8px;
+            height: 40px;
+        }
+
+        .dir-input-box:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        .dir-input-box input {
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 14px;
+            width: 100%;
+            height: 100%;
+            padding: 0 8px;
+            outline: none;
+        }
+
+        .dir-input-box input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .dir-input-icon {
+            font-size: 18px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .transport-mode-bar {
+            display: flex;
+            justify-content: space-around;
+            background: #1a73e8;
+            padding: 0 10px 10px 10px;
+        }
+
+        .mode-btn {
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.7);
+            padding: 8px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .mode-btn.active {
+            background: white;
+            color: #1a73e8;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        }
+
+        .mode-btn:hover:not(.active) {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        /* Route Item in List */
+        .route-item {
+            padding: 16px;
+            border-bottom: 1px solid #f1f3f4;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .route-item:hover {
+            background: #f8f9fa;
+        }
+
+        .route-time {
+            color: #188038;
+            font-size: 22px;
+            font-weight: 500;
+        }
+
+        .route-dist {
+            color: #70757a;
+            font-size: 14px;
+        }
+
+        /* Ward List Scroll Area */
+        .ward-list-scroll {
+            flex: 1;
+            overflow-y: auto;
+            border-top: 1px solid #f1f3f4;
+            max-height: calc(100% - 150px);
+            /* Adjust based on header height */
+        }
+
+        .ward-list-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            cursor: pointer;
+            border-bottom: 1px solid #f1f3f4;
+            transition: background 0.1s;
+        }
+
+        .ward-list-item:hover {
+            background: #f5f5f5;
+        }
+
+        .ward-list-icon {
+            color: #70757a;
+            font-size: 20px;
+            margin-right: 14px;
+        }
+
+        .ward-list-text {
+            font-size: 14px;
+            color: #202124;
+            font-weight: 400;
+        }
+
+        /* Route Instructions in Sidebar */
+        .route-instruction-item {
+            display: flex;
+            align-items: center;
+            padding: 16px;
+            border-bottom: 1px solid #e8eaed;
+            transition: background 0.2s;
+        }
+
+        .route-instruction-item:hover {
+            background: #f8f9fa;
+        }
+
+        .instruction-icon-circle {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #e8f0fe;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 16px;
+            flex-shrink: 0;
+        }
+
+        .instruction-icon-circle .material-icons {
+            color: #1a73e8;
+            font-size: 20px;
+        }
+
+        .instruction-details {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .instruction-main-text {
+            font-size: 14px;
+            color: #202124;
+            font-weight: 500;
+        }
+
+        .instruction-sub-text {
+            font-size: 12px;
+            color: #70757a;
+        }
+
+        /* Ward Election Table */
+        .ward-candidate-table {
+            width: 100%;
+            font-size: 13px;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        .ward-candidate-table th {
+            border-bottom: 1px solid #eee;
+            text-align: left;
+            color: #70757a;
+            padding: 8px 4px;
+            font-weight: 500;
+        }
+
+        .ward-candidate-table td {
+            padding: 8px 4px;
+            border-bottom: 1px solid #f8f9fa;
+            color: #202124;
+        }
+
+        .ward-candidate-table tr.winner-row {
+            background-color: #f0f7ff;
+            font-weight: 500;
+        }
+
+        .ward-candidate-table tr:last-child td {
+            border-bottom: none;
+        }
+    </style>
+    <script>
+        // Early global error handler to capture parse/runtime errors and their locations
+        window.addEventListener('error', function (e) {
+            try { console.error('GLOBAL_ERROR:', e.message, 'at', e.filename + ':' + e.lineno + ':' + e.colno); } catch (_) { console.error('GLOBAL_ERROR', e); }
+        });
+        console.log('Early error handler installed');
+    </script>
+</head>
+
+<body>
+    <canvas id="bg-canvas"></canvas>
+    <div class="app-wrapper">
+        <!-- LEFT SCREEN: SELECTOR PANEL -->
+        <div id="selectorScreen" class="screen active">
+            <div class="selector-container">
+                <div class="selector-header">
+                    <h1>🗺️ Kerala Ward Maps</h1>
+                    <p>Delimitation Commission 2024</p>
+                </div>
+
+                <!-- Status Bar -->
+                <div id="statusBar" class="status-bar">
+                    <span id="statusDot" class="status-dot online"></span>
+                    <span id="statusText">Checking connection...</span>
+                </div>
+
+                <!-- District Selection -->
+                <div class="selector-section">
+                    <label>01 // Select District</label>
+                    <select id="districtSelect" class="selector-input">
+                        <option value="">-- Choose District --</option>
+                    </select>
+                </div>
+
+                <!-- Type Selection -->
+                <div class="selector-section">
+                    <label>02 // Local Body Type</label>
+                    <div id="typeButtonsContainer" class="type-buttons-container">
+                        <div style="color: rgba(0,0,0,0.4); font-size: 0.8rem; padding: 4px;">Awaiting District
+                            Selection...</div>
+                    </div>
+                </div>
+
+                <!-- Body Selection -->
+                <div class="selector-section">
+                    <label>03 // Local Body Name</label>
+                    <select id="bodySelect" class="selector-input" disabled>
+                        <option value="">-- Select type first --</option>
+                    </select>
+                </div>
+
+                <!-- Auto Detect -->
+                <div class="selector-section">
+                    <button id="autoDetectLocationBtn" class="submit-btn"
+                        style="background-color: #fbbc05; color: #000;">
+                        Find My Location & Auto-Select
+                    </button>
+                </div>
+
+                <!-- View Map Button -->
+                <button id="viewMapBtn" class="submit-btn" disabled>Explore Map</button>
+
+                <!-- Election Map Section -->
+                <div class="selector-section"
+                    style="margin-top: 3rem; border-top: 1px solid var(--spark-border); padding-top: 2rem;">
+                    <div class="selector-header" style="margin-bottom: 1.5rem; border-bottom: none; padding-bottom: 0;">
+                        <h1
+                            style="font-size: 1.8rem; background: linear-gradient(180deg, #d93025 0%, #c5221f 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">
+                            🗳️ Election 2025</h1>
+                    </div>
+                    <button id="startElectionViewBtn" class="submit-btn"
+                        style="background: #d93025; box-shadow: 0 4px 15px rgba(217, 48, 37, 0.3);">
+                        View Kerala Result Map
+                    </button>
+                </div>
+
+                <!-- Nav Inputs (Dynamic) -->
+                <div class="inputs-container"
+                    style="margin-top: 2rem; border-top: 1px solid var(--spark-border); padding-top: 1rem;">
+                    <div id="stopsContainer"></div>
+                    <!-- MISSING BUTTONS FIXED -->
+                    <div id="routesList" style="display:none;"></div>
+
+                    <h2 style="font-weight:700; display:flex; align-items:center; gap:10px;">
+                        <i class="fa-solid fa-map-location-dot" style="color:var(--primary-color);"></i>
+                        Kerala Ward Map <span style="font-size:0.6em; color:green;">(Fixed v2.6)</span>
+                    </h2>
+                    <div style="display:flex; gap:8px; align-items:center; margin-top:8px;">
+                        <button class="add-stop-btn" id="addStopBtn"><i class="fa-solid fa-circle-plus"></i> Add
+                            destination</button>
+                        <button id="startTravelBtn" class="add-stop-btn"
+                            style="background:#1a73e8; color:white; border-radius:8px; display:none; padding:10px 12px; box-shadow:0 4px 10px rgba(26,115,232,0.2);">
+                            <i class="fa-solid fa-paper-plane"></i> Start Travel
+                        </button>
+                        <!-- Re-adding the ID required by script -->
+                        <button id="navigateBtn" class="add-stop-btn" style="background:#fbbc05; color:black;">
+                            <i class="fa-solid fa-diamond-turn-right"></i> Navigate
+                        </button>
+                    </div>
+                </div>
+                <!-- Search Results Dropdown -->
+                <div id="searchResults" class="search-dropdown"></div>
+
+            </div>
+        </div>
+
+        <!-- NAV UI OVERLAY -->
+        <div class="nav-ui-layer" id="navUiLayer">
+            <div id="step-banner">
+                <div class="maneuver-icon" id="maneuver-icon"><i class="fa-solid fa-arrow-up"></i></div>
+                <div class="instruction-text">
+                    <div class="instruction-main" id="instr-main">Head North</div>
+                    <div class="instruction-sub" id="instr-sub">Starting Route...</div>
+                </div>
+                <div class="distance-badge" id="step-dist">0m</div>
+            </div>
+            <div class="nav-bottom-container">
+                <div id="stats-panel">
+                    <div class="stat-item"><span class="stat-val" id="total-time" style="color:#188038">0
+                            min</span><span class="stat-label">Arrival</span></div>
+                    <div style="width: 1px; height: 20px; background: #ddd;"></div>
+                    <div class="stat-item"><span class="stat-val" id="total-dist">0 km</span><span
+                            class="stat-label">Distance</span></div>
+                    <button id="exit-nav-btn" title="Exit Navigation">✕</button>
+                    <button id="followToggleBtn" title="Toggle follow while navigating"
+                        style="margin-left:10px; background:#fff; border:1px solid #ddd; border-radius:8px; padding:6px 8px; cursor:pointer;">Follow:
+                        On</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT SCREEN: MAP PANEL -->
+        <div id="mapScreen" class="screen map-side-panel">
+            <div id="mapContainer"></div>
+
+            <!-- Google Maps Style Left Sidebar -->
+            <div id="sidebarPanel" class="left-sidebar">
+                <!-- EXPLORE MODE CONTENT -->
+                <div id="sidebar-explore-content" style="display:flex; flex-direction:column; height:100%;">
+                    <div class="sidebar-header-row" style="flex-shrink:0;">
+                        <!-- Back button here goes to Selector Screen? Or filters? 
+                              Let's keep it but maybe it clears search or returns to top -->
+                        <!-- Google Maps "Back" logic usually clears search or route. Here it goes to Selector. -->
+                        <!-- Actually, if we are in "Explore" mode, maybe this is a Menu button or just hidden? 
+                             The user screenshot had a Back arrow. -->
+
+                        <!-- SEARCH BOX CONTAINER (Detailed Google Maps Style) -->
+                        <div class="search-box-mock">
+                            <button id="menuBtn" class="icon-btn" title="Back" style="color: #5f6368;">
+                                <span class="material-icons">arrow_back</span>
+                            </button>
+                            <div class="search-icon-wrapper">
+                                <span class="material-icons">search</span>
+                            </div>
+                            <input type="text" id="mapSearchInput" placeholder="Search places, wards...">
+                            <div class="search-actions">
+                                <!-- <button class="action-btn"><span class="material-icons">mic</span></button> -->
+                                <button class="action-btn" onclick="goBackToSelector()"><span
+                                        class="material-icons">close</span></button>
+                            </div>
+                        </div>
+
+                        <!-- ELECTION LEGEND (Hidden by default) -->
+                        <div id="electionLegend" class="election-legend" style="display: none;">
+                            <div
+                                style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                                <h4 style="margin:0;">Election 2025</h4>
+                                <button class="icon-btn" onclick="showFullResultsTable()" title="View Full Table"
+                                    style="padding:4px;">
+                                    <span class="material-icons" style="color:#1a73e8; font-size:20px;">info</span>
+                                </button>
+                            </div>
+                            <div class="legend-item"><span class="dot" style="background:#ff9900"></span> NDA <span
+                                    id="count-NDA" class="count">0</span></div>
+                            <div class="legend-item"><span class="dot" style="background:#6d9eeb"></span> UDF <span
+                                    id="count-UDF" class="count">0</span></div>
+                            <div class="legend-item"><span class="dot" style="background:#dd7e6b"></span> LDF <span
+                                    id="count-LDF" class="count">0</span></div>
+                            <div class="legend-item"><span class="dot" style="background:#d5a6bd"></span> OTH <span
+                                    id="count-OTH" class="count">0</span></div>
+                            <div class="legend-item"><span class="dot" style="background:#cccccc"></span> TIE <span
+                                    id="count-TIE" class="count">0</span></div>
+                            <div
+                                style="margin-top:8px; font-size:11px; color:#666; border-top:1px solid #eee; padding-top:4px;">
+                                Based on Local Body Winners
+                            </div>
+                        </div>
+
+                        <!-- Map Controls (Zoom, My Location) -->
+                        <div class="divider"></div>
+                        <button id="directionsBtnHeader" class="icon-btn" title="Directions" style="color: #1a73e8;">
+                            <span class="material-icons">directions</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Separator -->
+                <div style="height:1px; background:#f1f3f4; margin: 10px 0; flex-shrink:0;"></div>
+
+                <!-- ALL WARDS LIST (Visible by default) -->
+                <div id="allWardsList" class="ward-list-scroll">
+                    <div style="padding:20px; text-align:center; color:#70757a;">
+                        <span class="material-icons spin" style="font-size:24px;">refresh</span><br>
+                        Loading wards...
+                    </div>
+                </div>
+
+                <!-- Ward Info Panel (Details - Hidden by default or overlay) -->
+                <div id="wardInfoPanel" class="ward-details-content"
+                    style="display:none; border-top:1px solid #f1f3f4; background: white; padding: 16px;">
+                    <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom: 2px;">
+                        <h3 id="wardTitle" style="margin:0;">Select a Ward</h3>
+                        <button class="icon-btn" onclick="closeWardDetails()"
+                            style="margin:-4px -4px 0 0; padding: 8px;" title="Close">
+                            <span class="material-icons" style="font-size:24px; color:#5f6368;">close</span>
+                        </button>
+                    </div>
+
+                    <!-- Election Winner Highlight slot -->
+                    <div id="wardElectionWinner"
+                        style="display:none; margin: 10px 0; padding:10px; border-radius:8px; background:#f8f9fa;">
+                        <div
+                            style="font-size:12px; font-weight:500; color:#5f6368; margin-bottom:4px; display:flex; align-items:center; gap:4px;">
+                            <span class="material-icons" style="font-size:16px; color:#ff9900;">stars</span> RULING
+                            MEMBER
+                        </div>
+                        <div id="wardWinnerName" style="font-size:16px; font-weight:700; color:#202124;">Name</div>
+                        <div id="wardWinnerParty" style="font-size:13px; color:#70757a;">Party (Front)</div>
+                    </div>
+
+                    <div id="wardInfo" style="color:#70757a; font-size:14px; line-height: 1.5; margin: 8px 0;">
+                        Click on the map to see details
+                    </div>
+
+                    <div id="wardCandidateTable" style="margin-top: 15px; overflow-x: auto;">
+                        <!-- Table injected here -->
+                    </div>
+
+                    <!-- Action Buttons Row -->
+                    <div class="action-buttons-row" style="display:flex; gap:10px; margin-top:16px;">
+                        <button class="action-pill" id="dirBtnAction">
+                            <span class="material-icons">directions</span>
+                            Directions
+                        </button>
+                        <button class="action-pill" onclick="/* share */">
+                            <span class="material-icons">share</span>
+                            Share
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DIRECTIONS MODE CONTENT (Hidden by default) -->
+            <div id="sidebar-directions-content" style="display:none; flex-direction:column; height:100%;">
+                <div class="dir-header" style="background:#1a73e8; padding: 10px 16px; color:white;">
+                    <div style="display:flex; gap:10px; align-items:flex-start;">
+                        <button class="icon-btn" id="closeDirBtn" style="color:white; margin-top:4px;"><span
+                                class="material-icons">arrow_back</span></button>
+                        <div style="flex:1; display:flex; flex-direction:column; gap:8px;">
+                            <div class="dir-input-box">
+                                <span class="material-icons dir-input-icon">my_location</span>
+                                <input type="text" id="dirInputStart" placeholder="Your Location" value="Your Location"
+                                    readonly>
+                            </div>
+                            <div class="dir-input-box">
+                                <span class="material-icons dir-input-icon" style="color:#ea4335;">location_on</span>
+                                <input type="text" id="dirInputEnd" placeholder="Choose destination">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Transport Mode Bar -->
+                <div class="transport-mode-bar">
+                    <button class="mode-btn active" data-mode="driving"><span
+                            class="material-icons">directions_car</span></button>
+                    <button class="mode-btn" data-mode="cycling"><span
+                            class="material-icons">directions_bike</span></button>
+                    <button class="mode-btn" data-mode="walking"><span
+                            class="material-icons">directions_walk</span></button>
+                </div>
+
+                <!-- Separator -->
+                <div style="height:1px; background:#e8eaed;"></div>
+
+                <!-- Routes List Area -->
+                <div id="dirRoutesList" style="flex:1; overflow-y:auto; padding:0;">
+                    <!-- Routes will be injected here -->
+                    <div style="padding:20px; text-align:center; color:#70757a;">
+                        <p>Select a destination ward to see routes.</p>
+                    </div>
+                </div>
+
+                <!-- Start Nav Button (Bottom) -->
+                <div style="padding:16px; border-top:1px solid #ddd;">
+                    <button id="startNavRealBtn" class="submit-btn"
+                        style="width:100%; display:flex; justify-content:center; gap:8px; background:#1a73e8;">
+                        <span class="material-icons">navigation</span> Start
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="fabContainer" class="map-controls-right fab-container">
+            <button id="viewElectionBtn" class="fab-btn" title="Toggle Election Map"
+                style="margin-bottom: 10px; background-color: #fff;">
+                <span class="material-icons" style="color: #ff9900;">how_to_vote</span>
+            </button>
+            <button id="locateBtn" class="fab-btn" title="My Location">
+                <span class="material-icons" style="font-size:24px;">my_location</span>
+            </button>
+            <!-- Zoom controls usually handled by Leaflet default, but we can style them or leave them -->
+        </div>
+
+        <!-- Floating Back Button (Mobile - hidden by default, handled by sidebar) -->
+        <button id="floatingBackBtn" style="display:none;"></button>
+    </div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div id="loadingSpinner" class="loading-spinner hidden">
+        <div class="spinner"></div>
+        <p>Loading map...</p>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-fullscreen/2.4.0/Control.FullScreen.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <!-- Three.js for 3D Background -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <!-- Bootstrap: populate district dropdown quickly so UI remains usable even if main script fails -->
+    <script>
+        (function () {
+            try {
+                const fallback = ["Thiruvananthapuram", "Kollam", "Pathanamthitta", "Alappuzha", "Kottayam", "Idukki", "Ernakulam", "Thrissur", "Palakkad", "Malappuram", "Kozhikode", "Wayanad", "Kannur", "Kasaragod"];
+                const sel = document.getElementById('districtSelect');
+                if (sel && sel.options.length <= 1) {
+                    sel.innerHTML = '<option value="">-- Choose District --</option>';
+                    fallback.forEach(d => { const o = document.createElement('option'); o.value = d; o.textContent = d; sel.appendChild(o); });
+                    console.log('Bootstrap: populated districtSelect fallback');
+                }
+            } catch (e) { console.warn('Bootstrap populate failed', e); }
+        })();
+    </script>
+
+    <!-- Main Application Logic -->
+    <script src="assets/script.js?v=refresh14"></script>
+
+    <!-- Legacy Inline Script (Removed) -->
+</body>
+
+</html>

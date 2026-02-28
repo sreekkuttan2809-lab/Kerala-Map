@@ -1,16 +1,3 @@
-{
-  "name": "kerala-ward-maps",
-  "version": "1.0.0",
-  "description": "Kerala Ward Maps - Delimitation Commission 2024",
-  "main": "server.js",
-  "scripts": {
-    "start": "node server.js"
-  },
-  "keywords": ["kerala", "ward", "maps", "delimitation"],
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "express": "^4.18.2",
-    "node-fetch": "^2.6.7"
-  }
-}
+version https://git-lfs.github.com/spec/v1
+oid sha256:6982fad414a48c99ce3b53de8dd5815912be71a80323b4c9de69dfe5ec5b892f
+size 691
